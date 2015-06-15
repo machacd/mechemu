@@ -1,21 +1,11 @@
 MODULE service_functions
 
 !This module contains functions, that are often used and not necessarily related
-!to the emulator, such as matrix inversion...
+!to the emulator, such as matrix inversion. Names are self-explaining
 
 IMPLICIT NONE
 
 contains
-
-FUNCTION rmse(vector1,vector2) result(out)
-  real :: vector1(:),vector2(:)
-  real :: out
-  integer :: length
-  length=size(vector1)
-  out=sqrt(sum((vector1(1:length/2)-vector2(1:length/2))**2)/length*2)
-  !we calculate the error just fro one half of the results!!!!!!!!!!!
-  !done only for my paper case
-end function rmse
 
 FUNCTION expo_mat(matrix,delta_t,m) result(out)
 INTEGER :: i,j
@@ -263,7 +253,6 @@ END SUBROUTINE
       END
 !----------------------------------------------------------------------|
 
-!functions related to C-type emulator
 
 
 SUBROUTINE write_vector(vector,path,time)
@@ -306,63 +295,21 @@ FUNCTION mat_to_vec(matrix) result(vector)
     ENDIF
     ALLOCATE(vector(size(matrix,1)))
     vector=0
-
     vector=matrix(:,1)
-
 END FUNCTION mat_to_vec
 
 FUNCTION double_scalar(non_scalar) result(out)
     IMPLICIT NONE
     real :: out
     real :: non_scalar(1,1)
-
     out=non_scalar(1,1)
-
 END FUNCTION double_scalar
 
 FUNCTION scalar_matrix(scalar) result(out)
     IMPLICIT NONE
     real :: out(1,1)
     real :: scalar
-
     out(1,1)=scalar
-
 END FUNCTION scalar_matrix
-
-
-!the two following functions are necesarry for simann
-
-function ranmar()
-real ranmar
-real U(97), C, CD, CM
-integer I97, J97
-common /raset1/ U, C, CD, CM, I97, J97
-real uni
-   uni = U(I97) - U(J97)
-   if( uni .lt. 0.0 ) uni = uni + 1.0
-   U(I97) = uni
-   I97 = I97 - 1
-   if(I97 .eq. 0) I97 = 97
-   J97 = J97 - 1
-   if(J97 .eq. 0) J97 = 97
-   C = C - CD
-   if( C .lt. 0.0 ) C = C + CM
-   uni = uni - C
-   if( uni .lt. 0.0 ) uni = uni + 1.0
-   RANMAR = uni
-return
-END function
-
-function seedgen(pid)
-    use iso_fortran_env
-    implicit none
-    integer(kind=int64) :: seedgen
-    integer, intent(IN) :: pid
-    integer :: s
-
-    call system_clock(s)
-    seedgen = abs( mod((s*181)*((pid-83)*359), 104729) ) 
-end function seedgen
-
 
 END MODULE

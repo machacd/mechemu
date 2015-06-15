@@ -1,9 +1,7 @@
-!this file contains functions specific for the emulator per se
-
+!this file contains functions specific to the emulator
 MODULE lin_mod
 
 USE service_functions
-USE omp_lib
 IMPLICIT NONE
 
 type :: linear_model_data
@@ -11,11 +9,11 @@ type :: linear_model_data
 !path to the program files
 CHARACTER(len=150) :: cesta_slozka
 
-!input and parameters of the emulator
-real,allocatable :: input(:), output(:,:), parameters(:,:), parameters_physical(:),&
-    blacklist(:)
-real,allocatable :: k_lam(:),k_loss(:),k_delay(:),F(:,:), g(:), H(:),I(:,:),&
-    cor_factor_multi(:),real_world(:),indices(:)
+!input and design data of the emulator
+real,allocatable :: input(:), output(:,:), parameters(:,:), parameters_physical(:)
+real,allocatable :: F(:,:), g(:), H(:),I(:,:),cor_factor_multi(:),real_world(:),indices(:)
+!hyperparameters of the emulator
+real,allocatable :: k_lam(:),k_loss(:),k_delay(:)
 real ::  gamma, cor_factor,delta_t,k_level,V_ini_inp,E_ini_inp
 INTEGER :: t_max, n_max, n_used, n_test_sets, m, dim_obs, no_of_pars,mode,&
   lambda_dim,input_dim
@@ -734,7 +732,7 @@ END IF
 end function
 
 ! very inefficient calculation of variance, for plotting purposes
-! a recursive formula should be done
+! a recursive formula should be created for a serious usage
 function calc_variance(this) result(out)
 IMPLICIT NONE
 type(linear_model_data) :: this
@@ -832,7 +830,6 @@ DO a=1,(this%n_used)
       END DO
     END DO
 ENDDO
-
   a=this%n_used+1
   b=this%n_used+1
   h_store_a=getFexp(this,a)
@@ -870,11 +867,9 @@ ENDDO
                   sigma_tilde_n1(j,i,:,:)
       END DO
     END DO
-
 tm=this%t_max
 dim=this%dim_obs
 nu=this%n_used
-
 DO a=1,nu
     b=nu+1
     DO i=1,tm
@@ -900,7 +895,6 @@ DO a=1,nu
       END DO
     END DO
 END DO
-
     b=nu+1
     a=nu+1
     DO i=1,tm
@@ -912,10 +906,7 @@ END DO
           transpose(getH(this,b)))
       END DO
     END DO
-    
-    ! write (*,*) solve_multidim(this,this%sigma,sigma_right)
-
-   out=sigma_n1!-matmul(sigma_left,solve_multidim(this,this%sigma,sigma_right))
+   out=sigma_n1
 
 END function calc_variance
 
