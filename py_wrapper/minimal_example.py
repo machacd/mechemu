@@ -35,8 +35,9 @@ dim_obs=1
 cor_len=2
 v_ini=1000
 e_ini=3000 #bug, this needs to be inferred from the design data
+#how many of the reservoirs are surface reservoirs?
 input_dim=1
-lambda_dim=1
+lambda_dim=m
 # set the percentile of included data judged by the relative gradients 
 hyperparam=np.zeros(lambda_dim+2*input_dim+dim_obs-1)
 # set pars of the linmod for each event, accuracy isn't terribly important here

@@ -2,7 +2,7 @@
 
 Fortran implementation of a mechanistic emulator applied to hydrological models based on the shallow-water equations.
 
-## Quick intro into setup for own problems
+## Quick intro into the included minimal example
 
 For a more detailed information on the theory of mechanistic emulators, see the
 referenced articles.
@@ -17,11 +17,11 @@ linear reservoirs, connected in series. One can specifiy, how many of them are
 surface reservoirs (they recieve rainfall), which then have their outflow governed
 by equation
 
-![equation](http%3A%2F%2Fwww.sciweavers.org%2Fupload%2FTex2Img_1437057429%2Feqn.png).
+![equation](http://www.sciweavers.org/upload/Tex2Img_1437057429/eqn.png).
 
 All the other reservoirs are subsurface reservoirs, governed by equation
 
-![equation](http%3A%2F%2Fwww.sciweavers.org%2Fupload%2FTex2Img_1437057739%2Feqn.png).
+![equation](http://www.sciweavers.org/upload/Tex2Img_1437057739/eqn.png).
 
 
 
