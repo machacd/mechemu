@@ -4,24 +4,23 @@ Fortran implementation of a mechanistic emulator applied to hydrological models 
 
 ## Quick intro into the included minimal example
 
-For a more detailed information on the theory of mechanistic emulators, see the
-referenced articles.
-
 The mechanistic emulator constits of a sum of two parts -- the linear model and
- a Gaussian process conditioned on previous runs of the full model.
+ a Gaussian process conditioned on previous runs of the full model. We deal only
+with the implementation and refer to the second article mentioned in the 
+[References](https://github.com/machacd/mechemu#references) when it comes to
+equations.
 
 ### Linear model
 
 The linear model currently implemented (file **core.f90**) consists of *m* coupled 
 linear reservoirs, connected in series. One can specifiy, how many of them are
 surface reservoirs (they recieve rainfall), which then have their outflow governed
-by equation
+by equation (5).
 
-![equation](http://www.sciweavers.org/upload/Tex2Img_1437057429/eqn.png).
+All the other reservoirs are subsurface linear reservoirs, with the release
+coefficient as per equation (10).
 
-All the other reservoirs are subsurface reservoirs, governed by equation
-
-![equation](http://www.sciweavers.org/upload/Tex2Img_1437057739/eqn.png).
+![equation]().
 
 
 
