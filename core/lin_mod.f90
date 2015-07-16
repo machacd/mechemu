@@ -6,9 +6,6 @@ IMPLICIT NONE
 
 type :: linear_model_data
 
-!path to the program files
-CHARACTER(len=150) :: cesta_slozka
-
 !input and design data of the emulator
 real,allocatable :: input(:), output(:,:), parameters(:,:), parameters_physical(:)
 real,allocatable :: F(:,:), g(:), H(:),I(:,:),cor_factor_multi(:),real_world(:),indices(:)
@@ -61,7 +58,6 @@ type(linear_model_data):: this
     DEALLOCATE(this%cor_factor_multi)
   ENDIF
   ALLOCATE(this%cor_factor_multi(this%no_of_pars))
-! OPEN(2068,FILE=trim(this%cesta_slozka)//'data/cor_factor.dat')
 ! DO i=1,this%no_of_pars
 !     READ(2068,*) this%cor_factor_multi(i)   
 ! END DO
@@ -126,22 +122,6 @@ IF (ALLOCATED(this%z_prime)) THEN
 ENDIF
 allocate(this%z_prime(this%n_used*this%t_max*this%m))
 this%z_prime=0
-
-
-  !remove design data that we don't use
-
-  
-
-!  !read the data to which we calibrate and parse them
-!  IF (ALLOCATED(this%real_world)) THEN
-!    DEALLOCATE(this%real_world)
-!  ENDIF
-!  ALLOCATE(this%real_world(dim*tm))
-!  this%real_world=0
-!
-!  OPEN(2009,FILE=trim(this%cesta_slozka)//'data/reality.dat')
-!  READ(2009,*) this%real_world   
-!  REWIND(2009)
 
 end subroutine
 
@@ -235,11 +215,10 @@ INTEGER :: alpha, time,i,a
 real :: out(this%m)
 real :: Fexp(this%m,this%m)
 out=0
+! input is only on the first of the reservoirs.
 do i =1,this%input_dim
   if (time-this%k_delay(i) .gt. 1) then
-    out(i)=this%input(time-int(this%k_delay(i)))*this%k_loss(i)*&
-      ! this%parameters_physical(5)*(this%parameters(alpha,1)+100)/100
-      this%parameters(alpha,1)
+    out(i)=this%input(time-int(this%k_delay(i)))*this%k_loss(i)*this%parameters(alpha,1)
   else
     out(i)=0
   end if
@@ -254,8 +233,8 @@ INTEGER :: alpha
 real :: out(this%dim_obs,this%m),lambda_store(this%lambda_dim)
 out=0
 lambda_store=lambda(this,alpha)
+! currently max 2 observations points are implemented, feel free to add more
  if (this%dim_obs>1) then
-   ! out(this%dim_obs-1,this%m-1)=this%k_level ! [m3s-1]
    out(this%dim_obs-1,1)=this%k_level ! [m3s-1]
  end if
 out(this%dim_obs,this%m)=lambda_store(this%lambda_dim) ! [m3s-1]
@@ -272,22 +251,17 @@ end do
 
 end function
 
-
 FUNCTION lambda(this, alpha) result(out)
 type(linear_model_data) :: this
 INTEGER :: alpha
 real :: width,slope,n_cat,n_pipe
 real :: A0(this%lambda_dim),out(this%lambda_dim)
 A0 = this%k_lam
-! width = this%parameters_physical(1)*(this%parameters(alpha,4)+100)/100
-! slope = this%parameters_physical(2)*(this%parameters(alpha,6)+100)/100
-! n_cat = this%parameters(alpha,2)
-! n_pipe = this%parameters(alpha,5)
 width = this%parameters_physical(1)*this%parameters(alpha,2)
 slope = this%parameters_physical(2)*this%parameters(alpha,3)
 n_cat = this%parameters_physical(3)*this%parameters(alpha,4)
 n_pipe = this%parameters_physical(4)*this%parameters(alpha,7)
-out=A0/n_pipe
+!the following governs the linear resrvoirs representing the surface inputs
 out(1:this%input_dim)=A0(1:this%input_dim)*width/n_cat*sqrt(slope)
 END FUNCTION lambda
 
@@ -421,14 +395,14 @@ m=this%m
     do i=1,tm
       k_store(:,i)=getk(this,a,i,h_store)
     end do
-    z_til(((a-1)*m+1):(a*m),1)=0
+    z_til(((a-1)*m+1):(a*m),1)=this%e_ini
     this%z((a-1)*dim*tm+1:(a-1)*dim*tm+dim)=&
       matmul(getH(this,a),z_til((a-1)*m+1:a*m,1))
     do i=2,tm
       z_til(((a-1)*m+1):(a*m),i)=matmul(h_store,&
         z_til((a-1)*m+1:a*m,i-1))+k_store(:,i)
       this%z((a-1)*tm*dim+(i-1)*dim+1:(a-1)*tm*dim+i*dim)=matmul(getH(this,a),&
-        z_til((a-1)*m+1:a*m,i))!+(/0.01D0,0D0/)
+        z_til((a-1)*m+1:a*m,i))
     end do
   END DO
 END SUBROUTINE set_z
@@ -471,7 +445,7 @@ do a=nu+1,nu+this%n_test_sets
                 this%z_prime((b-1)*tm*m+1:(b-1)*tm*m+m))
     end do
        ! y_til(((a_test-1)*m+1):(a_test*m),1)=temp+k_store(:,1)
-        y_til(((a_test-1)*m+1):(a_test*m),1)= 0
+        y_til(((a_test-1)*m+1):(a_test*m),1)=this%e_ini 
     this%y((a_test-1)*tm*dim+1:(a_test-1)*tm*dim+dim)=matmul(&
         (getH(this,a)),&
         y_til(((a_test-1)*m+1):(a_test*m),1))

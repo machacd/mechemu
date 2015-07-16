@@ -2,6 +2,27 @@
 
 Fortran implementation of a mechanistic emulator applied to hydrological models based on the shallow-water equations.
 
+## Quick intro into own setup
+
+For a more detailed information on the theory of mechanistic emulators, see the
+referenced articles.
+
+The mechanistic emulator constits of a sum of two parts -- the linear model and
+ a Gaussian process conditioned on previous runs of the full model.
+
+### Linear model
+
+The linear model currently implemented (file core.f90) consists of m coupled 
+linear reservoirs.
+
+```python
+
+```
+
+### Design data
+
+Design data consist of pairs parameter--model output. The user needs to generate them externaly using her model.
+
 ## References 
 
 Machac, D.; Reichert, P.; Rieckermann, J. & Albert, C. **Fast emulator of a a slow urban drainage simulator**. *Environmental Modelling & Software*, 2015 (submitted)
@@ -18,8 +39,6 @@ Reichert, P.; White, G.; Bayarri, M. J. & Pitman, E. B. [**Mechanism-based emula
 This work is part of the project “Using Commercial Microwave Links and Computer Model Emulation to Reduce Uncertainties in Urban Drainage Simulations” (COMCORDE) funded by
  the Swiss National Science Foundation, grants no. CR22I2 135551 and CR22I2 152824.
 
-![Eawag](http://www.eawag.ch/layout/ealogo.gif)  
-
-![COMCORDE](http://www.eawag.ch/forschung/sww/gruppen/comcorde/logo.PNG)
+![Eawag](http://www.eawag.ch/typo3conf/ext/sfpfrontender/RootPage/Default/Resources/Public/Partials/Logo/Images/Logo.svg)  
 
 ## License
