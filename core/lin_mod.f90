@@ -12,7 +12,7 @@ real,allocatable :: F(:,:), g(:), H(:),I(:,:),cor_factor_multi(:),real_world(:),
 !hyperparameters of the emulator
 real,allocatable :: k_lam(:),k_loss(:),k_delay(:)
 real ::  gamma, cor_factor,delta_t,k_level,V_ini_inp,E_ini_inp
-INTEGER :: t_max, n_max, n_used, n_test_sets, m, dim_obs, no_of_pars,mode,&
+INTEGER :: t_max, n_used, n_test_sets, m, dim_obs, no_of_pars,mode,&
   lambda_dim,input_dim
 
 !c_emu
@@ -41,12 +41,11 @@ contains
 subroutine read_data(this)
 type(linear_model_data):: this
   INTEGER :: i,j
-  integer :: tm,dim,nu,nt,m,nm
+  integer :: tm,dim,nu,nt,m
   tm=this%t_max
   dim=this%dim_obs
   nu=this%n_used
   nt=this%n_test_sets
-  nm=this%n_max
   m=this%m
 
  this%n_test_sets=1
