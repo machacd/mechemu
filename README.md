@@ -18,7 +18,16 @@ surface reservoirs (they recieve rainfall), which then have their outflow govern
 by equation (5).
 
 All the other reservoirs are subsurface linear reservoirs, with the release
-coefficient as per equation (10).
+coefficient as per equation (10). The output of the emulator is then always read
+from the very last reservoir, or the reservoir before that, if the user specifies
+*dim_obs=2*.
+
+This linear model is hardcoded into the file **core.f90**, but the user can easily
+change it, e.g.\ if she wishes to incorporate a more complex model structure. The 
+relevant functions are
+```
+:w
+
 
 ![equation]().
 

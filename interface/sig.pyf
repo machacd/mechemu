@@ -16,7 +16,7 @@ python module emulib ! in
             integer intent(in) :: n_u
             integer intent(in) :: dim_t
             integer intent(in) :: no_pars
-            real intent(in) :: cor_len
+            real dimension(no_pars),depend(no_pars),intent(in) :: cor_len
             real intent(in) :: v_ini
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
@@ -40,7 +40,7 @@ python module emulib ! in
             integer intent(in) :: n_u
             integer intent(in) :: dim_t
             integer intent(in) :: no_pars
-            real intent(in) :: cor_len
+            real dimension(no_pars),depend(no_pars),intent(in) :: cor_len
             real intent(in) :: v_ini
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
@@ -59,7 +59,7 @@ python module emulib ! in
             integer intent(in) :: n_u
             integer intent(in) :: dim_t
             integer intent(in) :: no_pars
-            real intent(in) :: cor_len
+            real dimension(no_pars),depend(no_pars),intent(in) :: cor_len
             real intent(in) :: v_ini
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
@@ -80,7 +80,7 @@ python module emulib ! in
             integer intent(in) :: n_u
             integer intent(in) :: dim_t
             integer intent(in) :: no_pars
-            real intent(in) :: cor_len
+            real dimension(no_pars),depend(no_pars),intent(in) :: cor_len
             real intent(in) :: v_ini
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
@@ -100,30 +100,11 @@ python module emulib ! in
             integer intent(in) :: n_u
             integer intent(in) :: dim_t
             integer intent(in) :: no_pars
-            real intent(in) :: cor_len
+            real dimension(no_pars),depend(no_pars),intent(in) :: cor_len
             real intent(in) :: v_ini
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
             integer intent(in) :: lambda_dim
         end subroutine evaluate_nonkalman_variance
-        subroutine ll_nonkalman(ll,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
-            use lin_mod
-            real dimension(lambda_dim+2*input_dim+dim_obs-1),depend(lambda_dim,input_dim,dim_obs),intent(in) :: hyperparam
-            real intent(out) :: ll
-            real dimension(n_u,dim_t),depend(n_u,dim_t),intent(in) :: design_data
-            real dimension(n_u,no_pars),depend(n_u,no_pars),intent(in) :: design_pars	
-            real dimension(dim_t),depend(dim_t),intent(in) :: rain
-            real dimension(5),intent(in) :: pars_physical
-            integer intent(in) :: m
-            integer intent(in) :: dim_obs 
-            integer intent(in) :: n_u
-            integer intent(in) :: dim_t
-            integer intent(in) :: no_pars
-            real intent(in) :: cor_len
-            real intent(in) :: v_ini
-            real intent(in) :: e_ini
-            integer intent(in) :: input_dim
-            integer intent(in) :: lambda_dim
-        end subroutine ll_nonkalman
     end interface 
 end python module emulib

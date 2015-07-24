@@ -53,15 +53,16 @@ type(linear_model_data):: this
  this%gamma=2.0
   !the folowing is used, if we look at correlation lengths separately for each parameter
   !in the kalman filter emulator library
-  IF (ALLOCATED(this%cor_factor_multi)) THEN
-    DEALLOCATE(this%cor_factor_multi)
-  ENDIF
-  ALLOCATE(this%cor_factor_multi(this%no_of_pars))
+  ! IF (ALLOCATED(this%cor_factor_multi)) THEN
+  !   DEALLOCATE(this%cor_factor_multi)
+  ! ENDIF
+  ! ALLOCATE(this%cor_factor_multi(this%no_of_pars))
+  ! this%cor_factor_multi=1
 ! DO i=1,this%no_of_pars
 !     READ(2068,*) this%cor_factor_multi(i)   
 ! END DO
 ! REWIND(2068)
-  this%cor_factor_multi=this%cor_factor
+  ! this%cor_factor_multi=this%cor_factor
 
   IF (ALLOCATED(this%input)) THEN
       DEALLOCATE(this%input)
@@ -271,7 +272,10 @@ real :: beta(:),gamma
 real :: Sigma(:,:),rho(size(Sigma,1),size(Sigma,1))
 
 rho=0
-rho = Sigma*exp(-sum((beta*(par1-par2))**gamma))
+rho = max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
+! rho = Sigma*exp(-sum((beta*(par1-par2))**gamma))
+! rho = Sigma*(1-sum((beta*(par1-par2))**gamma))
+! write (*,*) (1-sum((beta*(par1-par2))**gamma))
 end function rho
 
 
