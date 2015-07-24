@@ -25,11 +25,6 @@ from the very last reservoir, or the reservoir before that, if the user specifie
 This linear model is hardcoded into the file **core.f90**, but the user can easily
 change it, e.g.\ if she wishes to incorporate a more complex model structure. The 
 relevant functions are
-```
-:w
-
-
-![equation]().
 
 
 
