@@ -55,7 +55,7 @@ class design(object):
 class emu(object):
     def __init__(self,design,inp,other_pars,hyperparameters,cor_len,
                  m=1,d_obs=1,e_ini=1000,v_ini=1000,
-                 art="kalm",lambda_dim=1,input_dim=1):
+                 art="kalm",input_dim=1):
         self.m=m
         self.d_obs=d_obs
         self.dp=design.pars
@@ -66,7 +66,7 @@ class emu(object):
         self.v_ini=v_ini
         self.art=art
         self.cor_len=cor_len
-        self.lambda_dim=lambda_dim
+        self.lambda_dim=m
         self.input_dim=input_dim
         self.hyperparameters=hyperparameters
         self.typ="emulator"

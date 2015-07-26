@@ -3,14 +3,16 @@ FLAGS = -c -O3 -fPIC
 LIBS = -llapack -lblas
 FCOMPILER = gfortran
 F2PYCOMPILER= f2py
-emulator: service_functions.o lin_mod.o
+emulator: service_functions.o lin_mod.o symmlq.o
 	$(F2PYCOMPILER) -c -m emulib $(LIBS) sig.pyf emulator_f.f90 $^
 service_functions.o: ../core/service_functions.f90
 	$(FCOMPILER) $(FLAGS) ../core/service_functions.f90 $(LIBS)
 lin_mod.o: ../core/lin_mod.f90
-	$(FCOMPILER) $(FLAGS) ../core/lin_mod.f90 $(LIBS)
+	$(FCOMPILER) $(FLAGS) $^ $(LIBS)
 emulator_f.o: emulator_f.f90
-	$(FCOMPILER) $(FLAGS) emulator_f.f90 $(LIBS)
+	$(FCOMPILER) $(FLAGS) $^ $(LIBS)
+symmlq.o: ../core/symmlq.f90
+	$(FCOMPILER) $(FLAGS) $^ $(LIBS)
 clean:
 	rm *.mod *.o
 signature:

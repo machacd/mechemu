@@ -133,6 +133,21 @@ emulated_output(:,:,:,2)=shallow_water%var_e_obs_total(1,:,:,:)
 
 END subroutine
 
+SUBROUTINE msolve(n,x,y)
+    integer :: n
+    real ::   x(n), y(n)
+    y=y
+    write(*,*) "preconditioner"
+end subroutine msolve
+
+SUBROUTINE aprod(n,x,y,sigma)
+    integer :: n
+    real ::   x(n), y(n)
+    real :: sigma(n,n)
+    y=matmul(sigma,x)
+end subroutine aprod
+
+
 subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,&
         lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
@@ -174,10 +189,15 @@ if (dim_obs>1) then
         shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
 endif
 
+write (*,*) "write g to file"
 call write_g_to_file(shallow_water)
+write (*,*) "set z"
 call set_z(shallow_water)
+write (*,*) "set sig til"
 call set_sigma_tilde(shallow_water)
+write (*,*) "set sig"
 call set_sigma(shallow_water)
+write (*,*) "set zprime"
 call set_z_prime(shallow_water)
 z_prime=shallow_water%z_prime
 

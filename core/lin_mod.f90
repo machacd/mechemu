@@ -262,6 +262,7 @@ slope = this%parameters_physical(2)*this%parameters(alpha,3)
 n_cat = this%parameters_physical(3)*this%parameters(alpha,4)
 n_pipe = this%parameters_physical(4)*this%parameters(alpha,7)
 !the following governs the linear resrvoirs representing the surface inputs
+out=A0/n_pipe
 out(1:this%input_dim)=A0(1:this%input_dim)*width/n_cat*sqrt(slope)
 END FUNCTION lambda
 
@@ -272,7 +273,7 @@ real :: beta(:),gamma
 real :: Sigma(:,:),rho(size(Sigma,1),size(Sigma,1))
 
 rho=0
-rho = max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
+rho = Sigma*max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
 ! rho = Sigma*exp(-sum((beta*(par1-par2))**gamma))
 ! rho = Sigma*(1-sum((beta*(par1-par2))**gamma))
 ! write (*,*) (1-sum((beta*(par1-par2))**gamma))
@@ -489,7 +490,8 @@ end do
 !     output_long(1:nu*tm*dim)-&
 !     this%z(1:tm*nu*dim))
 
-z_back=solve(this,this%sigma,output_long-this%z(1:tm*nu*dim),.false.)
+! z_back=solve(this,this%sigma,output_long-this%z(1:tm*nu*dim),.false.)
+z_back=solve_sparse(this,this%sigma,output_long-this%z(1:tm*nu*dim))
 do a=1,this%n_used
     do i=1,this%t_max
         do j=1,this%t_max
@@ -503,31 +505,6 @@ do a=1,this%n_used
     end do
 end do
 END SUBROUTINE set_z_prime
-
-function log_likelihood(this) result(ll)
-IMPLICIT NONE
-type(linear_model_data) :: this
-INTEGER :: a,i,j
-real :: z_back,ll
-real :: output_long(this%t_max*this%n_used*this%dim_obs)
-integer :: tm,dim,nu,m
-
-tm=this%t_max
-dim=this%dim_obs
-nu=this%n_used
-m=this%m
-
-
-this%T_indices_store(3)=0
-
-do a=1,this%n_used
-  output_long((a-1)*tm*dim+1:a*tm*dim)=this%output(a,:)
-end do
-
-z_back=dot_product(output_long-this%z(1:tm*nu*dim),&
-        solve(this,this%sigma,output_long-this%z(1:tm*nu*dim),.true.))
-ll=-this%det-0.5*z_back
-END function log_likelihood
 
 
 
@@ -611,7 +588,7 @@ allocate(this%sigma(nu*tm*dim,nu*tm*dim))
 this%sigma=0
 
 DO a=1,nu
-  DO b=1,nu
+  DO b=1,a
     DO i=1,tm
       DO j=1,tm
         this%sigma((a-1)*tm*dim+(i-1)*dim+1:(a-1)*tm*dim+i*dim,&
@@ -625,11 +602,22 @@ DO a=1,nu
   END DO
 END DO
 
+DO a=1,nu
+  DO b=a+1,nu
+    DO i=1,tm
+      DO j=1,tm
+        this%sigma((a-1)*tm*dim+(i-1)*dim+1:(a-1)*tm*dim+i*dim,&
+          (b-1)*tm*dim+(j-1)*dim+1:(b-1)*tm*dim+j*dim)=&
+        (this%sigma((b-1)*tm*dim+(j-1)*dim+1:(b-1)*tm*dim+j*dim,&
+          (a-1)*tm*dim+(i-1)*dim+1:(a-1)*tm*dim+i*dim))
+      END DO
+    END DO
+  ENDDO
+ENDDO
+
 ! this%sigma=inv_mat(this%sigma)
 
 END SUBROUTINE set_sigma
-
-
 
 FUNCTION solve(this,matrix,vector,calc_determinant) result(out)
 type(linear_model_data):: this
@@ -672,6 +660,56 @@ END IF
 
 
 end function
+
+FUNCTION solve_sparse(this,matrix,vector) result(out)
+implicit           real (a-h,o-z)
+type(linear_model_data):: this
+real :: matrix(:,:),vector(:),out(size(matrix,1))
+logical ::            goodb, normal, precon
+
+!     ------------------------------------------------------------------
+!     test   solves sets up and solves a system (A - shift * I)x = b,
+!     using Aprod to define A and Msolve to define a preconditioner.
+!     ------------------------------------------------------------------
+
+common    /mshift/ shiftm, pertm
+                                                        
+intrinsic          abs
+external           aprod
+external           msolve
+logical ::            checkA
+real ::   b(size(matrix,1)), r1(size(matrix,1)), r2(size(matrix,1)), v(size(matrix,1)), w(size(matrix,1))
+real ::   x(size(matrix,1)), y(size(matrix,1)),  xtrue(size(matrix,1))
+integer ::            n, nout, itnlim, istop, itn
+parameter        ( one = 1.0,  two = 2.0 )
+
+write(*,*) "start of CG"
+precon = .FALSE. 
+goodb = .FALSE.
+shift  = 0.0
+pertbn = 0.0
+n=size(matrix,1)
+
+
+shiftm = shift
+pertm  = abs( pertbn )
+nout   = 6
+b=vector
+
+checkA = .FALSE. 
+itnlim = n * 2
+! itnlim = 10
+rtol   = 1.0E-5
+
+call symmlq( n, b, r1, r2, v, w, x, y, &
+aprod, msolve, checkA, goodb, precon, shift, &
+nout , itnlim, rtol, &
+istop, itn, anorm, acond, rnorm, ynorm,matrix )
+out=x
+write(*,*) "end of CG"
+
+end function
+
 
 FUNCTION solve_multidim(this,matrix,vector) result(out)
 type(linear_model_data):: this

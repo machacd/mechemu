@@ -1,7 +1,6 @@
 python module emulib ! in 
     interface  ! in :emulib
         subroutine condition_kalman(mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
-            use lin_mod
             real dimension(m*n_u,dim_t,3),depend(m,n_u,dim_t),intent(out) :: mean_d
             real dimension(dim_obs*n_u,dim_t,2),depend(dim_obs,n_u,dim_t),intent(out) :: mean_obs
             real dimension(m*n_u,m*n_u,dim_t,3),depend(m,n_u,dim_t),intent(out) :: var_d
@@ -23,7 +22,6 @@ python module emulib ! in
             integer intent(in) :: lambda_dim
         end subroutine condition_kalman
         subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini) 
-            use lin_mod
             real dimension(dim_obs,dim_obs,dim_t,2),depend(dim_obs,dim_t),intent(out) :: emulated_output
             real dimension(m*n_u,dim_t,3),depend(m,n_u,dim_t),intent(in) :: mean_d
             real dimension(dim_obs*n_u,dim_t,2),depend(dim_obs,n_u,dim_t),intent(in) :: mean_obs
@@ -47,7 +45,6 @@ python module emulib ! in
             integer intent(in) :: lambda_dim
         end subroutine evaluate_kalman
         subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
-            use lin_mod
             real dimension(lambda_dim+2*input_dim+dim_obs-1),depend(lambda_dim,input_dim,dim_obs),intent(in) :: hyperparam
             real dimension(n_u*dim_t*m),depend(m,n_u,dim_t),intent(out) :: z_prime
             real dimension(n_u,dim_t*dim_obs),depend(n_u,dim_t,dim_obs),intent(in) :: design_data
@@ -66,7 +63,6 @@ python module emulib ! in
             integer intent(in) :: lambda_dim
         end subroutine condition_nonkalman
         subroutine evaluate_nonkalman(emulated_output,z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
-            use lin_mod
             real dimension(lambda_dim+2*input_dim+dim_obs-1),depend(lambda_dim,input_dim,dim_obs),intent(in) :: hyperparam
             real dimension(dim_obs*dim_t),depend(dim_obs,dim_t),intent(out) :: emulated_output
             real dimension(n_u*dim_t*m),depend(m,n_u,dim_t),intent(in) :: z_prime
@@ -87,7 +83,6 @@ python module emulib ! in
             integer intent(in) :: lambda_dim
         end subroutine evaluate_nonkalman
         subroutine evaluate_nonkalman_variance(variance_output,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
-            use lin_mod
             real dimension(lambda_dim+2*input_dim+dim_obs-1),depend(lambda_dim,input_dim,dim_obs),intent(in) :: hyperparam
             real dimension(dim_obs*dim_t,dim_obs*dim_t),depend(dim_obs,dim_t),intent(out) :: variance_output
             real dimension(no_pars),depend(no_pars),intent(in) :: param
@@ -106,5 +101,16 @@ python module emulib ! in
             integer intent(in) :: input_dim
             integer intent(in) :: lambda_dim
         end subroutine evaluate_nonkalman_variance
+	subroutine msolve(n,x,y)
+		integer :: n
+		real dimension(n),depend(n) :: x
+		real dimension(n),depend(n) :: y
+	end subroutine msolve
+	SUBROUTINE aprod(n,x,y,sigma)
+		integer :: n
+		real dimension(n),depend(n) :: x
+		real dimension(n),depend(n) :: y
+		real dimension(n,n),depend(n) :: sigma
+	end subroutine aprod
     end interface 
 end python module emulib
