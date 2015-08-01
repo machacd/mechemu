@@ -95,21 +95,16 @@ class likelihood(object):
                                            bounds=list(zip(self.lower_bounds,
                                                            self.upper_bounds))
                                            ,args=[False]
-                                           ,disp=True, popsize=10,maxiter=5,
+                                           ,disp=True, popsize=10,maxiter=10,
                                            polish=False)
             swmm.run(ret.x[0:10])
             self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
             self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
                                                 ret.x[0:10]))
-            self.result_producing_thing.create_distance_matrix(2)
             self.result_producing_thing.condition()
             with open("candidates.dat", 'ab') as file:
                 np.savetxt(file,ret.x,fmt='%10.5f', newline=' ')
             with open("candidates.dat", 'a') as file:
-                file.writelines("\n")
-            with open("distances.dat", 'ab') as file:
-                np.savetxt(file,self.result_producing_thing.distances,fmt='%10.5f', newline=' ')
-            with open("distances.dat", 'a') as file:
                 file.writelines("\n")
             j+=1
 

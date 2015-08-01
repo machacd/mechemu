@@ -52,7 +52,6 @@ class design(object):
 
 
 
-
 class emu(object):
     def __init__(self,design,inp,other_pars,hyperparameters,cor_len,
                  m=1,d_obs=1,e_ini=1000,v_ini=1000,
@@ -71,41 +70,6 @@ class emu(object):
         self.input_dim=input_dim
         self.hyperparameters=hyperparameters
         self.typ="emulator"
-        self.degree=1
-        self.distances=np.zeros(self.dd.shape[0])+1
-    
-    def create_distance_matrix(self,degree):
-        n=self.dd.shape[0]
-        self.distances=np.zeros(n)+1
-        self.degree=degree
-        for i in np.arange(n):
-            minima=np.zeros((2,degree))+np.inf
-            for j in np.arange(degree):
-                for k in np.arange(n):
-                    if not k in minima[0,:] and k!=i:
-                        dist=np.linalg.norm(self.dp[i,:]-self.dp[k,:])
-                        if dist<minima[1,j]:
-                            minima[1,j]=dist
-                            minima[0,j]=k
-            self.distances[i]=np.mean(minima[1,:])
-
-
-    def add_distance(self,pars):
-        if np.all(self.distances==1):
-            return 1
-        else:
-            n=self.dd.shape[0]
-            minima=np.zeros((2,self.degree))+np.inf
-            for j in np.arange(self.degree):
-                for k in np.arange(n):
-                    if not k in minima[0,:]:
-                        dist=np.linalg.norm(pars-self.dp[j,:])
-                        if dist<minima[1,j]:
-                            minima[1,j]=dist
-                            minima[0,j]=k
-            return np.mean(minima[1,:])
-
-
 
     def condition(self):
         if self.art=="kalm":
@@ -123,8 +87,7 @@ class emu(object):
                                                 self.inp,
                                                 self.other_pars,
                                                 self.v_ini,
-                                                self.e_ini,
-                                                self.distances)
+                                                self.e_ini)
         elif self.art=="nonkalm":
             self.conditioned=emulib.condition_nonkalman(self.m,
                                                 self.d_obs,
@@ -164,10 +127,7 @@ class emu(object):
                                                self.inp,
                                                self.other_pars,
                                                self.v_ini,
-                                               self.e_ini,
-                                               self.distances,
-                                               self.add_distance(self.pars))
-            # print(self.add_distance(self.pars))
+                                               self.e_ini)
             self.result=emulated[0,0,:,0]
         elif self.art=="nonkalm":
             self.result=emulib.evaluate_nonkalman(self.conditioned,

@@ -1,6 +1,6 @@
 python module emulib ! in 
     interface  ! in :emulib
-        subroutine condition_kalman(mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini,distances)
+        subroutine condition_kalman(mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
             real dimension(m*n_u,dim_t,3),depend(m,n_u,dim_t),intent(out) :: mean_d
             real dimension(dim_obs*n_u,dim_t,2),depend(dim_obs,n_u,dim_t),intent(out) :: mean_obs
             real dimension(m*n_u,m*n_u,dim_t,3),depend(m,n_u,dim_t),intent(out) :: var_d
@@ -20,9 +20,8 @@ python module emulib ! in
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
             integer intent(in) :: lambda_dim
-            real dimension(n_u),depend(n_u),intent(in) :: distances	
         end subroutine condition_kalman
-        subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini,distances,distance) 
+        subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini) 
             real dimension(dim_obs,dim_obs,dim_t,2),depend(dim_obs,dim_t),intent(out) :: emulated_output
             real dimension(m*n_u,dim_t,3),depend(m,n_u,dim_t),intent(in) :: mean_d
             real dimension(dim_obs*n_u,dim_t,2),depend(dim_obs,n_u,dim_t),intent(in) :: mean_obs
@@ -44,8 +43,6 @@ python module emulib ! in
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
             integer intent(in) :: lambda_dim
-            real dimension(n_u),depend(n_u),intent(in) :: distances	
-            real intent(in) :: distance
         end subroutine evaluate_kalman
         subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
             real dimension(lambda_dim+2*input_dim+dim_obs-1),depend(lambda_dim,input_dim,dim_obs),intent(in) :: hyperparam

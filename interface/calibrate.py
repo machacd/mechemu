@@ -7,7 +7,7 @@ design=e.design("design_data_full.dat","design_pars_full.dat",32)
 measurement_path="measurement.dat"
 design.pick_first(32)
 pars_physical=[44.78,0.112,0.01,0.01,1000]
-cor_len=[1.0]*10
+cor_len=[1.5]*10
 rain=np.genfromtxt("rain_4_emu.dat")
 names=["Impervious area","Width","Slope","$n_{imp}$","storage imp.","storage per.","% of imp. area w/o dep. sto.","$n_{con}$","Tue","Zue","$\sigma^2_e$","$\sigma^2_b$"]
 # hyperparam=[0.0000231,0.000231,2000000,0]
@@ -17,30 +17,30 @@ hyperparam=[0.0000231,2000000,0]
 lower_par=np.array([0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,1,0,0])
 upper_par=np.array([1.1,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1,1])
 emu=e.emu(design,rain,pars_physical,hyperparam,cor_len)
-emu.create_distance_matrix(2)
+
 emu.condition()
-emu.emulate(design.test_pars[3])
+# eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.01)
+
+# swmm=s.swmm()
+# eli.improve_emulator_for_lnlik(swmm,16)
+
+# import emcee
+# eli.sampler_pars(24,2000)
+# sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
+#                                 eli.lnprob,threads=8)
+# sampler.run_mcmc(eli.pos, eli.length)
+# eli.print_info_write_chain(sampler)
+# sampler.pool.close()
+
+# eli.chainz(sampler)
+
+
+# cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_500_0.01.dat",
+                          # "samples_emulator_501_0.01.dat")
+
+
+%timeit emu.emulate(design.test_pars[5])
 emu.plot(design,["emu","swmm"])
-emu.improve(design,15)
-
-eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.01)
-
-
-swmm=s.swmm()
-eli.improve_emulator_for_lnlik(swmm,16)
-
-import emcee
-eli.sampler_pars(24,1000)
-sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
-                                eli.lnprob,threads=8)
-sampler.run_mcmc(eli.pos, eli.length)
-eli.print_info_write_chain(sampler)
-sampler.pool.close()
-eli.chainz(sampler)
-cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_500_0.01.dat",
-                          "samples_emulator_501_0.01.dat")
-
-
 
 # hyperparam=[0.0000231,0.000231,2000000,0]
 # emu=e.emu(design,rain,pars_physical,hyperparam,cor_len)
@@ -55,6 +55,7 @@ cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_500_0.01.d
 # cor_len=ret.x
 # emu=e.emu(design,rain,pars_physical,hyperparam,cor_len)
 
+# emu.improve(design,15)
 
 # initial=(lower_par+upper_par])/2
 

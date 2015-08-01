@@ -1,6 +1,6 @@
 subroutine condition_kalman(mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,&
                 dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,&
-                design_data,design_pars,rain,pars_physical,v_ini,e_ini,distances)
+                design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 IMPLICIT NONE
 
@@ -10,7 +10,7 @@ integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
 real :: mean_d(m*n_u,dim_t,3),var_d(m*n_u,m*n_u,dim_t,3)
 real :: mean_obs(dim_obs*n_u,dim_t,2),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
 real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
-real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars),distances(n_u)
+real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
 real :: pars_physical(5)
 
@@ -28,7 +28,6 @@ call read_data(shallow_water)
 call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
-shallow_water%distances(1:n_u)=distances
 shallow_water%input=rain
 shallow_water%parameters_physical=pars_physical
 call allocate_initial(shallow_water)
@@ -50,7 +49,7 @@ END subroutine
 
 subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,&
         dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,&
-        design_data,design_pars,rain,pars_physical,v_ini,e_ini,distances,distance)
+        design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 
 IMPLICIT NONE
@@ -62,8 +61,8 @@ real :: mean_d(m*n_u,dim_t,3),var_d(m*n_u,m*n_u,dim_t,3)
 real :: mean_obs(dim_obs*n_u,dim_t,2),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
 real :: emulated_output(dim_obs,dim_obs,dim_t,2)
 real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
-real :: param(no_pars),distance
-real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars),distances(n_u)
+real :: param(no_pars)
+real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
 real :: pars_physical(5)
 
@@ -83,7 +82,6 @@ call read_data(shallow_water)
 call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
-shallow_water%distances(1:n_u)=distances
 shallow_water%input=rain
 shallow_water%parameters_physical=pars_physical
 call allocate_initial(shallow_water)
@@ -95,7 +93,6 @@ if (dim_obs>1) then
         shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
 endif
 shallow_water%parameters(n_u+1,:)=param
-shallow_water%distances(n_u+1)=distance
 
 
 !Allocate some initial vectors.
@@ -361,11 +358,9 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
 
   do ir=1,n_used
     do ic=1,n_used
-      var_V_D(m*(ir-1)+1:m*ir,m*(ic-1)+1:m*ic) = rho(this%Sigma_ini,&
-              beta/min(this%distances(ir),this%distances(ic)),this%gamma,pars_des(ir,:),&
+      var_V_D(m*(ir-1)+1:m*ir,m*(ic-1)+1:m*ic) = rho(this%Sigma_ini,beta,this%gamma,pars_des(ir,:),&
         pars_des(ic,:))
-      var_V_1(m*(ir-1)+1:m*ir,m*(ic-1)+1:m*ic) = rho(this%V_ini,&
-              beta/min(this%distances(ir),this%distances(ic)),this%gamma,pars_des(ir,:),&
+      var_V_1(m*(ir-1)+1:m*ir,m*(ic-1)+1:m*ic) = rho(this%V_ini,beta,this%gamma,pars_des(ir,:),&
         pars_des(ic,:))
     end do
   end do 
@@ -634,9 +629,7 @@ do i_e=1,n_test
   states_means_e(:,1,3) = this%E_ini
   states_variances_e(:,:,1,1) = this%V_ini
   do i=1,n_used
-    states_covariances_e((i-1)*m+1:i*m,:,1,1) = rho(this%V_ini,&
-            beta/min(this%distances(i),this%distances(n_used+1)),this%gamma,pars_e,pars_des(i,:))
-        ! write(*,*) min(this%distances(n_used+1),this%distances(i))
+    states_covariances_e((i-1)*m+1:i*m,:,1,1) = rho(this%V_ini,beta,this%gamma,pars_e,pars_des(i,:))
   end do
   !     !filtering
 
@@ -677,8 +670,7 @@ do i_e=1,n_test
     ALLOCATE(Cov_V_DE(m*n_used,m))
     Cov_V_DE=0
     do k=1,n_used
-      Cov_V_DE((k-1)*m+1:k*m,:)=rho(this%Sigma_ini,&
-              beta/min(this%distances(k),this%distances(n_used+1)),this%gamma,pars_des(k,:),pars_e)
+      Cov_V_DE((k-1)*m+1:k*m,:)=rho(this%Sigma_ini,beta,this%gamma,pars_des(k,:),pars_e)
     end do
 
     IF (ALLOCATED(Var_V_E)) THEN
@@ -686,8 +678,7 @@ do i_e=1,n_test
     ENDIF
     ALLOCATE(Var_V_E(m,m))
     Var_V_E=0
-    Var_V_E=rho(this%Sigma_ini,&
-            beta/min(this%distances(n_used+1),this%distances(n_used+1)),this%gamma,pars_e,pars_e)
+    Var_V_E=rho(this%Sigma_ini,beta,this%gamma,pars_e,pars_e)
 
     states_means_e(:,j,1) = matmul(F_E(j,:,:),states_means_e(:,j-1,2)) + g_E 
       states_means_e(:,j,3) = matmul(F_E(j,:,:),states_means_e(:,j-1,3)) + g_E 
