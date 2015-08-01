@@ -64,8 +64,8 @@ def compare_two_posteriors(lower_par,upper_par,names,path1="samples_emu.dat",
             row=0
             col+=1
     f.tight_layout()
-    f.legend((handle_hist[2]),("Emulator",),fancybox=True,loc=4)
-    f.legend((handle_hist2[2]),("SWMM",),fancybox=True,loc=4)
+    f.legend((handle_hist[2]),("First",),fancybox=True,loc=4)
+    f.legend((handle_hist2[2]),("Second",),fancybox=True,loc=4)
     f.savefig("posterior.pdf",dpi=500)
     plt.close()
 

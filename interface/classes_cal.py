@@ -13,21 +13,18 @@ class likelihood(object):
             self.t=result_producing_thing.dd.shape[1]
         elif result_producing_thing.typ=="swmm":
             self.t=result_producing_thing.t
-    
-    def cov_mat_b(self,sig_b,tau):
-        result=np.zeros((self.t,self.t))
+        
+        cov_mat_b_base=np.zeros((self.t,self.t))
         exponentials=np.zeros(self.t)
+        tau=10
         for i in np.arange(self.t):
             exponentials[i]=np.exp(-1/tau*i)
         for i in np.arange(self.t):
             for j in np.arange(0,i+1):
-                result[i,j]=sig_b*exponentials[i-j]
-        return cf.symmetrize(result)
-
-    def cov_mat_e(self,sig_e):
-        sds=np.zeros(self.t)+sig_e
-        result=np.diagflat(sds)
-        return result
+                cov_mat_b_base[i,j]=exponentials[i-j]
+        self.cov_mat_b_base=cf.symmetrize(cov_mat_b_base)
+        sds=np.zeros(self.t)+1
+        self.cov_mat_e_base=np.diagflat(sds)
 
     def better_loglikelihood(self,param_e):
         if self.result_producing_thing.typ=="emulator":
@@ -36,9 +33,8 @@ class likelihood(object):
             self.result_producing_thing.run(param_e[0:10])
         data=stats.boxcox(abs(100+self.measurement),0.35)
         mean=stats.boxcox(abs(100+self.result_producing_thing.result),0.35)
-        sig2=param_e[11]
-        covariance=self.cov_mat_b(sig2,10)+\
-            self.cov_mat_e(param_e[10])
+        covariance=param_e[11]*self.cov_mat_b_base+\
+            self.cov_mat_e_base*param_e[10]
         lik=-0.5*np.linalg.slogdet(covariance)[1]-\
             0.5*np.dot(mean-data,np.linalg.solve(covariance,mean-data))
         print(lik)
@@ -89,6 +85,35 @@ class likelihood(object):
         for i in np.arange(self.ndim):
             self.extent[i]=(self.lower_bounds[i],self.upper_bounds[i])
 
+    def improve_emulator_for_lnlik(self,swmm,improvement_steps):
+        import scipy.optimize as opt
+        # from multiprocessing import Pool
+        j=0
+        # threads=8
+        while j<improvement_steps:
+            ret=opt.differential_evolution(self.lnprob,
+                                           bounds=list(zip(self.lower_bounds,
+                                                           self.upper_bounds))
+                                           ,args=[False]
+                                           ,disp=True, popsize=10,maxiter=5,
+                                           polish=False)
+            swmm.run(ret.x[0:10])
+            self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
+            self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
+                                                ret.x[0:10]))
+            self.result_producing_thing.create_distance_matrix(2)
+            self.result_producing_thing.condition()
+            with open("candidates.dat", 'ab') as file:
+                np.savetxt(file,ret.x,fmt='%10.5f', newline=' ')
+            with open("candidates.dat", 'a') as file:
+                file.writelines("\n")
+            with open("distances.dat", 'ab') as file:
+                np.savetxt(file,self.result_producing_thing.distances,fmt='%10.5f', newline=' ')
+            with open("distances.dat", 'a') as file:
+                file.writelines("\n")
+            j+=1
+
+
     def print_info_write_chain(self,sampler):
         import datetime
         print("Mean acceptance fraction: {0:.3f}"
@@ -116,20 +141,28 @@ class likelihood(object):
         filename+=".dat"
         np.savetxt(filename,self.max_posterior,fmt='%10.5f')
 
+    def chainz(self,sampler):
+        import matplotlib as mpl
+        mpl.use('Agg')
+        import matplotlib.pyplot as plt
+        chain_no=np.random.randint(0,self.walkers)
+        plt.clf()
+        f,axes=plt.subplots(2,6,figsize=(24,8))
+        row=0
+        col=0
+        for i in np.arange(self.ndim):
+            axes[row,col].plot(sampler.chain[chain_no,:,i])
+            row+=1
+            if (row==2):
+                row=0
+                col+=1
+        f.tight_layout()
+        filename="chainz_"
+        filename+=self.result_producing_thing.typ
+        filename+="_"
+        filename+=str(self.length)
+        filename+="_"
+        filename+=str(self.errscale)
+        filename+=".pdf"
+        f.savefig(filename)
 
-
-    def first_estimate(self,start_value,mybounds):
-        import scipy.optimize as opt
-        ret=opt.basinhopping(self.lnprob,start_value,niter=10000,T=100,stepsize=0.5,minimizer_kwargs={"method":"L-BFGS-B", "args":(False)},accept_test=mybounds)
-        return ret
-
-# these bounds are ony for the first_estimate
-class MyBounds(object):
-    def __init__(self, xmax=[0.5]*12, xmin=[1.5]*12):
-        self.xmax = np.array(xmax)
-        self.xmin = np.array(xmin)
-    def __call__(self, **kwargs):
-        x = kwargs["x_new"]
-        tmax = bool(np.all(x <= self.xmax))
-        tmin = bool(np.all(x >= self.xmin))
-        return tmax and tmin

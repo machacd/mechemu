@@ -7,7 +7,7 @@ IMPLICIT NONE
 type :: linear_model_data
 
 !input and design data of the emulator
-real,allocatable :: input(:), output(:,:), parameters(:,:), parameters_physical(:)
+real,allocatable :: input(:), output(:,:), parameters(:,:), parameters_physical(:),distances(:)
 real,allocatable :: F(:,:), g(:), H(:),I(:,:),cor_factor_multi(:),real_world(:),indices(:)
 !hyperparameters of the emulator
 real,allocatable :: k_lam(:),k_loss(:),k_delay(:)
@@ -125,31 +125,6 @@ this%z_prime=0
 
 end subroutine
 
-!this subroutine makes sure that we condition with design data randomly drawn
-!from our generated sets
-subroutine resample_pars(this)
-  type(linear_model_data):: this
-  integer :: nu,tm,dim
-  tm=this%t_max
-  nu=this%n_used
-  dim=this%dim_obs
-
-    IF (ALLOCATED(this%output)) THEN
-      DEALLOCATE(this%output)
-    ENDIF
-    ALLOCATE(this%output(nu,tm*dim))
-    this%output=0
-
-    IF (ALLOCATED(this%parameters)) THEN
-      DEALLOCATE(this%parameters)
-    ENDIF
-    ALLOCATE(this%parameters(nu+1,this%no_of_pars))
-    this%parameters=0
-
-
-end subroutine
-
-
 function getF(this, alpha) result(out)
 type(linear_model_data) :: this
 INTEGER :: alpha
@@ -251,6 +226,39 @@ end do
 
 end function
 
+!this subroutine makes sure that we condition with design data randomly drawn
+!from our generated sets
+subroutine resample_pars(this)
+  type(linear_model_data):: this
+  integer :: nu,tm,dim
+  tm=this%t_max
+  nu=this%n_used
+  dim=this%dim_obs
+
+    IF (ALLOCATED(this%output)) THEN
+      DEALLOCATE(this%output)
+    ENDIF
+    ALLOCATE(this%output(nu,tm*dim))
+    this%output=0
+
+    IF (ALLOCATED(this%parameters)) THEN
+      DEALLOCATE(this%parameters)
+    ENDIF
+    ALLOCATE(this%parameters(nu+1,this%no_of_pars))
+    this%parameters=0
+
+    IF (ALLOCATED(this%distances)) THEN
+      DEALLOCATE(this%distances)
+    ENDIF
+    ALLOCATE(this%distances(nu+1))
+    this%distances=0
+
+
+
+
+end subroutine
+
+
 FUNCTION lambda(this, alpha) result(out)
 type(linear_model_data) :: this
 INTEGER :: alpha
@@ -271,10 +279,18 @@ function rho(Sigma, beta, gamma, par1, par2)
 real :: par1(:), par2(:)
 real :: beta(:),gamma
 real :: Sigma(:,:),rho(size(Sigma,1),size(Sigma,1))
+real :: r
+! integer :: D,q,j
 
 rho=0
-rho = Sigma*max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
-! rho = Sigma*exp(-sum((beta*(par1-par2))**gamma))
+! D=2
+! q=1
+
+! r=sum((beta*(par1-par2))**gamma)
+! j=floor(D/2.0)+1+q
+! rho = Sigma*max((1-r),0.0)**(j+1)*((j+1)*r+1)
+! rho = Sigma*max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
+rho = Sigma*exp(-sum((beta*(par1-par2))**gamma))
 ! rho = Sigma*(1-sum((beta*(par1-par2))**gamma))
 ! write (*,*) (1-sum((beta*(par1-par2))**gamma))
 end function rho
@@ -295,7 +311,9 @@ real :: beta(this%no_of_pars)
 integral = matmul(-inv_mat(getF(this,a)+transpose(getF(this,b))),&
   (-expo_mat(getF(this,a)+transpose(getF(this,b)),this%delta_t,this%m)+this%I))
 
-beta=1.0/(getdelta(this)*this%cor_factor_multi)
+beta=1.0/(getdelta(this)*this%cor_factor_multi)!*min(this%distances(a),this%distances(b)))
+! write (*,*) "jfklsjkl"
+! write (*,*) min(this%distances(a),this%distances(b))
 out=rho(this%sigma_ini,beta,this%gamma,this%parameters(a,:),this%parameters(b,:))*integral
 END FUNCTION g
 

@@ -27,6 +27,41 @@ DO i=1,m
 END DO
 END FUNCTION expo_mat
 
+FUNCTION solve2(matrix,vector) result(out)
+INTEGER :: i,m,j
+real :: matrix(:,:),vector(:),out(size(matrix,1))
+INTEGER,ALLOCATABLE :: ipiv(:)
+real,ALLOCATABLE :: work(:)
+INTEGER :: info=0
+
+m=size(matrix,1)
+out = vector
+i =INT(m)
+IF (ALLOCATED(work)) THEN
+ DEALLOCATE(work)
+ENDIF
+ALLOCATE(work(i))
+work=0
+IF (ALLOCATED(ipiv)) THEN
+ DEALLOCATE(ipiv)
+ENDIF
+ALLOCATE(ipiv(i))
+ipiv=0
+
+CALL ssytrf('U',i,matrix,i,ipiv,work,i,info)
+IF ( info .NE. 0 ) THEN
+ write(*,*) 'not OK'
+END IF
+
+CALL ssytrs('U',i,1,matrix,i,ipiv,out,i,info)
+IF ( info .NE. 0 ) THEN
+ write(*,*) 'not OK'
+END IF
+
+
+end function
+
+
 FUNCTION inv_mat(matrix) result(out)
 INTEGER :: i,m
 real :: matrix(:,:),out(size(matrix,1),size(matrix,2))

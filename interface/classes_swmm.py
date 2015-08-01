@@ -5,10 +5,10 @@ import run_swwm_for_calib_output as rsfco
 class swmm(object):
     def __init__(self):
         self.typ="swmm"
-        initrun=rsfco.run_swmm([1]*10,"4","own")
+        initrun=rsfco.run_swmm([1]*10,"4","no")
         self.t=initrun.shape[0]
 
     def run(self,pars):
         self.pars=pars
-        self.result=rsfco.run_swmm(self.pars,"4","own")
+        self.result=rsfco.run_swmm(self.pars,"4","no")
 
