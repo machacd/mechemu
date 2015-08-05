@@ -33,10 +33,17 @@ class likelihood(object):
             self.result_producing_thing.run(param_e[0:10])
         data=stats.boxcox(abs(100+self.measurement),0.35)
         mean=stats.boxcox(abs(100+self.result_producing_thing.result),0.35)
-        covariance=param_e[11]*self.cov_mat_b_base+\
-            self.cov_mat_e_base*param_e[10]
-        lik=-0.5*np.linalg.slogdet(covariance)[1]-\
-            0.5*np.dot(mean-data,np.linalg.solve(covariance,mean-data))
+        # data=self.measurement
+        # mean=self.result_producing_thing.result
+        # comment/uncomment according to using bias+se model or just se model
+        if param_e.shape[0]==12:
+            covariance=param_e[11]*self.cov_mat_b_base+\
+                self.cov_mat_e_base*param_e[10]
+            lik=-0.5*np.linalg.slogdet(covariance)[1]-\
+                0.5*np.dot(mean-data,np.linalg.solve(covariance,mean-data))
+        elif param_e.shape[0]==11:
+            lik=-0.5*param_e[10]**self.t-\
+                0.5*np.inner(mean-data,mean-data)/param_e[10]
         print(lik)
         return lik
 
@@ -95,7 +102,7 @@ class likelihood(object):
                                            bounds=list(zip(self.lower_bounds,
                                                            self.upper_bounds))
                                            ,args=[False]
-                                           ,disp=True, popsize=10,maxiter=10,
+                                           ,disp=True, popsize=20,maxiter=20,
                                            polish=False)
             swmm.run(ret.x[0:10])
             self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
@@ -115,49 +122,21 @@ class likelihood(object):
                               .format(np.mean(sampler.acceptance_fraction)))
         print(["Finished at: ",datetime.datetime.now()])
         samples = sampler.chain[:,:, :].reshape((-1,self.ndim))
-        filename="samples_"
-        filename+=self.result_producing_thing.typ
-        filename+="_"
-        filename+=str(self.length)
-        filename+="_"
-        filename+=str(self.errscale)
-        filename+=".dat"
+        filename=cf.create_file_name(["samples",self.result_producing_thing.typ,
+                                     str(self.length),str(self.errscale),".dat"])
         np.savetxt(filename,samples)
         self.max_posterior = np.zeros(self.ndim)
         for i in np.arange(self.ndim):
             self.max_posterior[i]=stats.mode(samples[:,i])[0]
             print(stats.mode(samples[:,i])[1])
-        filename="max_posterior_"
-        filename+=self.result_producing_thing.typ
-        filename+="_"
-        filename+=str(self.length)
-        filename+="_"
-        filename+=str(self.errscale)
-        filename+=".dat"
+        filename=cf.create_file_name(["max_posterior",self.result_producing_thing.typ,
+                                     str(self.length),str(self.errscale),".dat"])
         np.savetxt(filename,self.max_posterior,fmt='%10.5f')
 
-    def chainz(self,sampler):
-        import matplotlib as mpl
-        mpl.use('Agg')
-        import matplotlib.pyplot as plt
-        chain_no=np.random.randint(0,self.walkers)
-        plt.clf()
-        f,axes=plt.subplots(2,6,figsize=(24,8))
-        row=0
-        col=0
-        for i in np.arange(self.ndim):
-            axes[row,col].plot(sampler.chain[chain_no,:,i])
-            row+=1
-            if (row==2):
-                row=0
-                col+=1
-        f.tight_layout()
-        filename="chainz_"
-        filename+=self.result_producing_thing.typ
-        filename+="_"
-        filename+=str(self.length)
-        filename+="_"
-        filename+=str(self.errscale)
-        filename+=".pdf"
-        f.savefig(filename)
+    def log_liks_ddata(self,pars):
+        lliks=[0]*pars.shape[0]
+        for i in np.arange(pars.shape[0]):
+            lliks[i]=self.lnprob(np.hstack((pars[i],[0.15,0.35])))
+        return lliks
+
 

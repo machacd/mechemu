@@ -217,7 +217,7 @@ class emu(object):
         return(current)
 
 
-    def plot(self,design,what):
+    def plot(self,design,what,likelihood=0,swmm=0):
         #«what» can contain:
         #kalm, nkalm, meas, test, swmm
         import matplotlib as mpl
@@ -236,12 +236,18 @@ class emu(object):
                 plt.plot(time,design.data[i,:],'0.8',linewidth=0.1),
             plt.plot(time,design.data[0,:],'0.8',linewidth=0.1,label="design data"),
             if "swmm" in what:
+                found=0
                 for i in range(design.n_test):
                     if (self.pars==design.test_pars[i,:]).all():
                         plt.plot(time,design.test_data[i],color="red",label="SWMM")
-            # plt.plot(time,mean_nonkalm[obs_layout],color="blue",label="emulator nonkalm")
+                        found=1
+                if found==0:
+                    swmm.run(self.pars)
+                    plt.plot(time,swmm.result,color="red",label="SWMM")
             if "emu" in what:
                 plt.plot(time,self.result,color="green",label="emulator")
+            if "measurement" in what:
+                plt.plot(time,likelihood.measurement,color="blue",label="measurement")
             # plt.plot(time,measurement[obs_layout],color="black",label="measurement")
             # plt.plot(time,test[obs_layout],color="magenta",label="swmm, calibrated")
             plt.ylabel('Q [l$\cdot$s$^{-1}$]')

@@ -3,44 +3,75 @@ import classes_emu as e
 import classes_cal as c
 import classes_swmm as s
 import common_functions as cf
-design=e.design("design_data_full.dat","design_pars_full.dat",32)
+design=e.design("design_data_full.dat","design_pars_full.dat",128)
 measurement_path="measurement.dat"
 design.pick_first(32)
 pars_physical=[44.78,0.112,0.01,0.01,1000]
-cor_len=[1.5]*10
+cor_len=[2.0]*10
 rain=np.genfromtxt("rain_4_emu.dat")
 names=["Impervious area","Width","Slope","$n_{imp}$","storage imp.","storage per.","% of imp. area w/o dep. sto.","$n_{con}$","Tue","Zue","$\sigma^2_e$","$\sigma^2_b$"]
 # hyperparam=[0.0000231,0.000231,2000000,0]
-hyperparam=[0.0000231,2000000,0]
-
+hyperparam=[0.00000831,2000000,0]
 
 lower_par=np.array([0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,1,0,0])
 upper_par=np.array([1.1,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1,1])
-emu=e.emu(design,rain,pars_physical,hyperparam,cor_len)
-
+emu=e.emu(design,rain,pars_physical,hyperparam,cor_len,e_ini=3000,art="kalm")
 emu.condition()
-# eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.01)
+# hist of loglikelihood values for the emulator
+eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.01)
+
+# lliks_e=eli.log_liks_ddata(design.test_pars[0:128])
+# hist,bins=np.histogram(lliks_e,50)
+# width = 0.91 * (bins[1] - bins[0])
+# center = (bins[:-1] + bins[1:]) / 2
+# import matplotlib.pyplot as plt
+# plt.clf()
+# plt.bar(center, hist, align='center', width=width)
+# plt.savefig("hist_e.pdf")
+
+
+# swmm=s.swmm()
+# slikelihood=c.likelihood(measurement_path,swmm,lower_par,upper_par,errscale=0.01)
+# lliks_s=slikelihood.log_liks_ddata(design.test_pars[0:128])
+
+# difference=np.abs(np.array(lliks_s)-np.array(lliks_e))
+# hist,bins=np.histogram(difference,80)
+# width = 0.91 * (bins[1] - bins[0])
+# center = (bins[:-1] + bins[1:]) / 2
+# import matplotlib.pyplot as plt
+# plt.clf()
+# plt.bar(center, hist, align='center', width=width)
+# plt.savefig("hist_diff.pdf")
+
+
+
 
 # swmm=s.swmm()
 # eli.improve_emulator_for_lnlik(swmm,16)
 
-# import emcee
-# eli.sampler_pars(24,2000)
-# sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
-#                                 eli.lnprob,threads=8)
-# sampler.run_mcmc(eli.pos, eli.length)
-# eli.print_info_write_chain(sampler)
-# sampler.pool.close()
+import emcee
+eli.sampler_pars(24,2005)
+sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
+                                eli.lnprob,threads=8)
+sampler.run_mcmc(eli.pos, eli.length)
+eli.print_info_write_chain(sampler)
+sampler.pool.close()
 
 # eli.chainz(sampler)
 
 
-# cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_500_0.01.dat",
-                          # "samples_emulator_501_0.01.dat")
+# cf.compare_two_posteriors(lower_par,upper_par,names,"samples_swmm_2000_0.1_b.dat",
+#                           "samples_emulator_2000_1.dat")
 
+cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_2001_0.01.dat",
+                          "samples_swmm_2000_0.01.dat")
 
-%timeit emu.emulate(design.test_pars[5])
-emu.plot(design,["emu","swmm"])
+cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_2000_0.01.dat",
+                          "samples_emulator_2005_0.01.dat")
+
+cf.plot_triangle(lower_par,upper_par,names,"samples_swmm_2000_0.01.dat")
+# %timeit emu.emulate(design.test_pars[19])
+# emu.plot(design,["emu","swmm"])
 
 # hyperparam=[0.0000231,0.000231,2000000,0]
 # emu=e.emu(design,rain,pars_physical,hyperparam,cor_len)
@@ -94,28 +125,20 @@ emu.plot(design,["emu","swmm"])
 # # plt.savefig('fft.pdf',dpi=500)
 # # plt.close()
 
-
-
-# emu.condition()
-# elikelihood=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.1)
-# # MCMC, (package emcee)
-
-# import emcee
-# elikelihood.sampler_pars(24,2002)
-# sampler = emcee.EnsembleSampler(elikelihood.walkers, elikelihood.ndim,
-#                                 elikelihood.lnprob,threads=8)
-# sampler.run_mcmc(elikelihood.pos, elikelihood.length)
-# elikelihood.print_info_write_chain(sampler)
-# sampler.pool.close()
+########VALIDATION PART
 
 emu.condition()
-param=np.genfromtxt("max_posterior_emulator_500_0.01.dat")
+elikelihood=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.01)
+emu.condition()
+param=np.genfromtxt("max_posterior_swmm_2000_0.01.dat")
 emu.emulate(param[0:10])
 eli.better_loglikelihood(param)
+
+# %timeit emu.emulate(design.test_pars[19])
+emu.plot(design,["emu","swmm","measurement"],likelihood=eli,swmm=swmm)
+
 
 swmm=s.swmm()
 
 slikelihood=c.likelihood(measurement_path,swmm,lower_par,upper_par,errscale=0.01)
 slikelihood.better_loglikelihood(param)
-
-

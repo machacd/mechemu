@@ -275,14 +275,14 @@ real :: r
 integer :: D,q,j
 
 rho=0
-D=1
-q=1
+! D=1
+! q=1
 
 r=sum((beta*(par1-par2))**gamma)
-j=floor(D/2.0)+1+q
-rho = Sigma*max((1-r),0.0)**(j+1)*((j+1)*r+1)
+! j=floor(D/2.0)+1+q
+! rho = Sigma*max((1-r),0.0)**(j+1)*((j+1)*r+1)
 ! rho = Sigma*max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
-! rho = Sigma*exp(-sum((beta*(par1-par2))**gamma))
+rho = Sigma*exp(-r)
 ! rho = Sigma*(1-sum((beta*(par1-par2))**gamma))
 ! write (*,*) (1-sum((beta*(par1-par2))**gamma))
 end function rho
@@ -707,7 +707,7 @@ b=vector
 checkA = .FALSE. 
 itnlim = n * 2
 ! itnlim = 10
-rtol   = 1.0E-5
+rtol   = 1.0E-6
 
 call symmlq( n, b, r1, r2, v, w, x, y, &
 aprod, msolve, checkA, goodb, precon, shift, &

@@ -31,7 +31,7 @@ def compare_two_posteriors(lower_par,upper_par,names,path1="samples_emu.dat",
     f,axes=plt.subplots(4,3,figsize=(16,16))
     row=0
     col=0
-    for i in np.arange(12):
+    for i in np.arange(lower_par.shape[0]):
         handle_hist=axes[row,col].hist([emu_samples[:,i]],
                                        bins=100,
                                        alpha=1,
@@ -57,7 +57,7 @@ def compare_two_posteriors(lower_par,upper_par,names,path1="samples_emu.dat",
             axes[row,col].plot(x,prior)
         else:
             x=np.arange(down[i],up[i],0.01)
-            prior=stats.gamma.pdf(x,1,scale=0.1)
+            prior=stats.gamma.pdf(x,1,scale=0.01)
             axes[row,col].plot(x,prior)
         row+=1
         if (row==4):
@@ -68,5 +68,48 @@ def compare_two_posteriors(lower_par,upper_par,names,path1="samples_emu.dat",
     f.legend((handle_hist2[2]),("Second",),fancybox=True,loc=4)
     f.savefig("posterior.pdf",dpi=500)
     plt.close()
+
+def create_file_name(strings):
+    strings=np.array(strings)
+    filename=""
+    for i in np.arange(strings.shape[0]):
+        filename+=strings[i]
+        if i!=strings.shape[0]-2 and i!=strings.shape[0]-1:
+            filename+="_"
+    return filename
+
+def plot_all_chains(input_file,total_chains,no_pars):
+    import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
+    samples=np.genfromtxt(input_file)
+    chain_length=samples.shape[0]/total_chains
+    plt.clf()
+    f,axes=plt.subplots(2,6,figsize=(24,8))
+    for i in np.arange(total_chains):
+        chain=samples[i*chain_length:(i+1)*chain_length,:]
+        row=0
+        col=0
+        for j in np.arange(no_pars):
+            axes[row,col].plot(chain[:,j],'b',alpha=0.54)
+            row+=1
+            if (row==2):
+                row=0
+                col+=1
+    f.tight_layout()
+    filename=create_file_name(["chainz",input_file,".pdf"])
+    f.savefig(filename)
+
+def plot_triangle(lower_par,upper_par,names,filename):
+    import triangle
+    inp_file=np.genfromtxt(filename)
+    extent=[(1,1)]*lower_par.shape[0]
+    for i in np.arange(lower_par.shape[0]):
+        extent[i]=(lower_par[i],upper_par[i])
+    fig = triangle.corner(inp_file,labels=names,exents=extent)
+    filename=create_file_name(["triangle_",filename,".png"])
+    fig.savefig(filename)
+
+
 
 
