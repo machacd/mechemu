@@ -1,5 +1,5 @@
 subroutine condition_kalman(mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,&
-                dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,&
+                dim_t,no_pars,cor_len,gamma,input_dim,lambda_dim,hyperparam,&
                 design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 IMPLICIT NONE
@@ -9,7 +9,7 @@ type(linear_model_data) :: shallow_water
 integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
 real :: mean_d(m*n_u,dim_t,3),var_d(m*n_u,m*n_u,dim_t,3)
 real :: mean_obs(dim_obs*n_u,dim_t,2),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
+real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
 real :: pars_physical(5)
@@ -20,6 +20,7 @@ shallow_water%t_max=dim_t
 shallow_water%n_used=n_u
 shallow_water%no_of_pars=no_pars
 shallow_water%cor_factor_multi=cor_len      
+shallow_water%gamma=gamma      
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
@@ -48,7 +49,7 @@ var_obs=shallow_water%states_variances_obs
 END subroutine
 
 subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,&
-        dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,lambda_dim,hyperparam,param,&
+        dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,lambda_dim,hyperparam,param,&
         design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 
@@ -60,7 +61,7 @@ integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
 real :: mean_d(m*n_u,dim_t,3),var_d(m*n_u,m*n_u,dim_t,3)
 real :: mean_obs(dim_obs*n_u,dim_t,2),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
 real :: emulated_output(dim_obs,dim_obs,dim_t,2)
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
+real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: param(no_pars)
 real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
@@ -74,6 +75,7 @@ shallow_water%t_max=dim_t
 shallow_water%n_used=n_u
 shallow_water%no_of_pars=no_pars
 shallow_water%cor_factor_multi=cor_len      
+shallow_water%gamma=gamma      
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
@@ -137,6 +139,7 @@ SUBROUTINE msolve(n,x,y)
     integer :: n
     real ::   x(n), y(n)
     y=y
+    x=x
     write(*,*) "preconditioner"
 end subroutine msolve
 
@@ -148,7 +151,7 @@ SUBROUTINE aprod(n,x,y,sigma)
 end subroutine aprod
 
 
-subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,input_dim,&
+subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,&
         lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 USE service_functions
@@ -156,7 +159,7 @@ IMPLICIT NONE
 type(linear_model_data):: shallow_water
 
 integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
+real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: z_prime(n_u*dim_t*m)
 real :: design_data(n_u,dim_t*dim_obs),design_pars(n_u,no_pars)
 real :: rain(dim_t)
@@ -168,6 +171,7 @@ shallow_water%dim_obs=dim_obs
 shallow_water%t_max=dim_t
 shallow_water%no_of_pars=no_pars
 shallow_water%cor_factor_multi=cor_len      
+shallow_water%gamma=gamma      
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
@@ -204,7 +208,7 @@ z_prime=shallow_water%z_prime
 END subroutine condition_nonkalman
 
 subroutine evaluate_nonkalman(emulated_output,z_prime,m,dim_obs,&
-                n_u,dim_t,no_pars,cor_len,input_dim,&
+                n_u,dim_t,no_pars,cor_len,gamma,input_dim,&
                 lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 USE service_functions
@@ -212,7 +216,7 @@ IMPLICIT NONE
 type(linear_model_data):: shallow_water
 
 integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
+real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: z_prime(m*n_u*dim_t)
 real :: param(no_pars)
 real :: emulated_output(dim_obs*dim_t)
@@ -226,6 +230,7 @@ shallow_water%dim_obs=dim_obs
 shallow_water%t_max=dim_t
 shallow_water%no_of_pars=no_pars
 shallow_water%cor_factor_multi=cor_len      
+shallow_water%gamma=gamma      
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
@@ -255,7 +260,7 @@ emulated_output=shallow_water%y
 END subroutine evaluate_nonkalman
 
 subroutine evaluate_nonkalman_variance(variance_output,m,dim_obs,&
-                n_u,dim_t,no_pars,cor_len,input_dim,&
+                n_u,dim_t,no_pars,cor_len,gamma,input_dim,&
                 lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
 USE lin_mod
 USE service_functions
@@ -263,7 +268,7 @@ IMPLICIT NONE
 type(linear_model_data):: shallow_water
 
 integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini
+real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: param(no_pars)
 real :: variance_output(dim_obs*dim_t,dim_obs*dim_t)
 real :: design_data(n_u,dim_t*dim_obs),design_pars(n_u,no_pars)
@@ -276,6 +281,7 @@ shallow_water%dim_obs=dim_obs
 shallow_water%t_max=dim_t
 shallow_water%no_of_pars=no_pars
 shallow_water%cor_factor_multi=cor_len      
+shallow_water%gamma=gamma      
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      

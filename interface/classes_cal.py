@@ -11,6 +11,8 @@ class likelihood(object):
         self.result_producing_thing=result_producing_thing
         if result_producing_thing.typ=="emulator":
             self.t=result_producing_thing.dd.shape[1]
+            self.ini_dd=result_producing_thing.dp.shape[0]
+            self.added_counter=0
         elif result_producing_thing.typ=="swmm":
             self.t=result_producing_thing.t
         
@@ -25,26 +27,20 @@ class likelihood(object):
         self.cov_mat_b_base=cf.symmetrize(cov_mat_b_base)
         sds=np.zeros(self.t)+1
         self.cov_mat_e_base=np.diagflat(sds)
+        self.names=["Impervious area","Width","Slope","$n_{imp}$","storage imp.","storage per.","% of imp. area w/o dep. sto.","$n_{con}$","Tue","Zue","$\sigma^2_e$","$\sigma^2_b$"]
 
     def better_loglikelihood(self,param_e):
         if self.result_producing_thing.typ=="emulator":
-            self.result_producing_thing.emulate(param_e[0:10])
+            self.result_producing_thing.emulate(param_e[0:-2])
         if self.result_producing_thing.typ=="swmm":
-            self.result_producing_thing.run(param_e[0:10])
+            self.result_producing_thing.run(param_e[0:-2])
         data=stats.boxcox(abs(100+self.measurement),0.35)
         mean=stats.boxcox(abs(100+self.result_producing_thing.result),0.35)
-        # data=self.measurement
-        # mean=self.result_producing_thing.result
-        # comment/uncomment according to using bias+se model or just se model
-        if param_e.shape[0]==12:
-            covariance=param_e[11]*self.cov_mat_b_base+\
-                self.cov_mat_e_base*param_e[10]
-            lik=-0.5*np.linalg.slogdet(covariance)[1]-\
-                0.5*np.dot(mean-data,np.linalg.solve(covariance,mean-data))
-        elif param_e.shape[0]==11:
-            lik=-0.5*param_e[10]**self.t-\
-                0.5*np.inner(mean-data,mean-data)/param_e[10]
-        print(lik)
+        covariance=param_e[-1]*self.cov_mat_b_base+\
+            self.cov_mat_e_base*param_e[-2]
+        lik=-0.5*np.linalg.slogdet(covariance)[1]-\
+            0.5*np.dot(mean-data,np.linalg.solve(covariance,mean-data))-\
+            0.5*self.t*np.log(2*np.pi)
         return lik
 
     def logprior(self,param_e):
@@ -52,15 +48,8 @@ class likelihood(object):
         down=self.lower_bounds
         up=self.upper_bounds
         if np.all(down < param_e) and np.all(param_e < up):
-            for i in np.arange(down.shape[0]):
-                if (i<10):
-                    mu=(up[i]+down[i])/2
-                    sc=(up[i]-down[i])/10
-                    prior+=np.log(stats.truncnorm.pdf(param_e[i],(down[i]-mu)/sc,
-                                                      (up[i]-mu)/sc,
-                                                      loc=mu,scale=sc))
-                else:
-                    prior+=np.log(stats.gamma.pdf(param_e[i],1,scale=self.errscale))
+            for i in np.arange(self.lower_bounds.shape[0]):
+                prior+=np.log(self.prior_dist(param_e[i],i))
             return prior
         return -np.inf
 
@@ -78,6 +67,7 @@ class likelihood(object):
             else:
                 return np.inf
         if maximize:    
+            print(lp,ll)
             return lp + ll
         else:
             return -lp -ll
@@ -92,7 +82,7 @@ class likelihood(object):
         for i in np.arange(self.ndim):
             self.extent[i]=(self.lower_bounds[i],self.upper_bounds[i])
 
-    def improve_emulator_for_lnlik(self,swmm,improvement_steps):
+    def improve_emulator_for_lnlik(self,swmm,improvement_steps,design):
         import scipy.optimize as opt
         # from multiprocessing import Pool
         j=0
@@ -104,17 +94,38 @@ class likelihood(object):
                                            ,args=[False]
                                            ,disp=True, popsize=20,maxiter=20,
                                            polish=False)
-            swmm.run(ret.x[0:10])
+            pars=ret.x[0:8]
+            if cf.closest_distance(self.result_producing_thing.dp,pars)<0.5:
+                pars=design.pars_all[self.ini_dd+self.added_counter]
+                swmm.result=design.data_all[self.ini_dd+self.added_counter]
+                self.added_counter+=1
+            else:
+                swmm.run(pars)
+                with open("candidates.dat", 'ab') as file:
+                    np.savetxt(file,pars,fmt='%10.5f', newline=' ')
+                with open("candidates.dat", 'a') as file:
+                    file.writelines("\n")
             self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
             self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
-                                                ret.x[0:10]))
+                                                pars))
             self.result_producing_thing.condition()
-            with open("candidates.dat", 'ab') as file:
-                np.savetxt(file,ret.x,fmt='%10.5f', newline=' ')
-            with open("candidates.dat", 'a') as file:
-                file.writelines("\n")
             j+=1
 
+    def prior_dist(self,par,i):
+        down=self.lower_bounds[i]
+        up=self.upper_bounds[i]
+        if (i<self.lower_bounds.shape[0]-2):
+            mu=(up+down)/2
+            sc=(up-down)/7
+            prior=stats.truncnorm.pdf(par,(down-mu)/sc,
+                                           (up-mu)/sc,
+                                           loc=mu,scale=sc)
+        else:
+            prior=stats.gamma.pdf(par,1,scale=self.errscale)
+        return prior
+
+
+#service functions
 
     def print_info_write_chain(self,sampler):
         import datetime
@@ -133,10 +144,23 @@ class likelihood(object):
                                      str(self.length),str(self.errscale),".dat"])
         np.savetxt(filename,self.max_posterior,fmt='%10.5f')
 
+#extra experiments
+
+    def add_candidates(self,swmm):
+        candidates=np.genfromtxt("candidates.dat")
+        candidates=cf.remove_duplicate_rows(candidates)
+        for i in np.arange(candidates.shape[0]):
+            swmm.run(candidates[i])
+            self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
+            self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
+                                                      candidates[i]))
+            self.result_producing_thing.condition()
+
+
     def log_liks_ddata(self,pars):
         lliks=[0]*pars.shape[0]
         for i in np.arange(pars.shape[0]):
-            lliks[i]=self.lnprob(np.hstack((pars[i],[0.15,0.35])))
+            lliks[i]=self.lnprob(pars[i])
         return lliks
 
 

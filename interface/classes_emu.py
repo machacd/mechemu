@@ -55,7 +55,7 @@ class design(object):
 class emu(object):
     def __init__(self,design,inp,other_pars,hyperparameters,cor_len,
                  m=1,d_obs=1,e_ini=1000,v_ini=1000,
-                 art="kalm",input_dim=1):
+                 art="kalm",input_dim=1,gamma=2):
         self.m=m
         self.d_obs=d_obs
         self.dp=design.pars
@@ -66,6 +66,7 @@ class emu(object):
         self.v_ini=v_ini
         self.art=art
         self.cor_len=cor_len
+        self.gamma=gamma
         self.lambda_dim=m
         self.input_dim=input_dim
         self.hyperparameters=hyperparameters
@@ -79,6 +80,7 @@ class emu(object):
                                                 self.dd.shape[1],
                                                 self.dp.shape[1],
                                                 self.cor_len,
+                                                self.gamma,
                                                 self.input_dim,
                                                 self.lambda_dim,
                                                 self.hyperparameters,
@@ -95,6 +97,7 @@ class emu(object):
                                                 self.dd.shape[1],
                                                 self.dp.shape[1],
                                                 self.cor_len,
+                                                self.gamma,
                                                 self.input_dim,
                                                 self.lambda_dim,
                                                 self.hyperparameters,
@@ -118,6 +121,7 @@ class emu(object):
                                                self.dd.shape[1],
                                                self.dp.shape[1],
                                                self.cor_len,
+                                               self.gamma,
                                                self.input_dim,
                                                self.lambda_dim,
                                                self.hyperparameters,
@@ -137,6 +141,7 @@ class emu(object):
                                                self.dd.shape[1],
                                                self.dp.shape[1],
                                                self.cor_len,
+                                               self.gamma,
                                                self.input_dim,
                                                self.lambda_dim,
                                                self.hyperparameters,
@@ -233,8 +238,8 @@ class emu(object):
             # simulator=design.test_data[test_set,:]
             indices=np.arange(1,self.dd.shape[0])
             for i in np.nditer(indices):
-                plt.plot(time,design.data[i,:],'0.8',linewidth=0.1),
-            plt.plot(time,design.data[0,:],'0.8',linewidth=0.1,label="design data"),
+                plt.plot(time,design.data[i,:],'0.3',linewidth=0.3),
+            plt.plot(time,design.data[0,:],'0.3',linewidth=0.3,label="design data"),
             if "swmm" in what:
                 found=0
                 for i in range(design.n_test):
@@ -252,7 +257,7 @@ class emu(object):
             # plt.plot(time,test[obs_layout],color="magenta",label="swmm, calibrated")
             plt.ylabel('Q [l$\cdot$s$^{-1}$]')
             plt.xlabel('t [min]')
-            plt.ylim([0,1000])
+            plt.ylim([0,400])
             plt.grid()
         plt.legend(fancybox=True,loc=1)
         plt.savefig('result.pdf',dpi=500)

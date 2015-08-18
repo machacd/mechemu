@@ -50,7 +50,6 @@ type(linear_model_data):: this
 
  this%n_test_sets=1
  this%delta_t=1
- this%gamma=2.0
   !the folowing is used, if we look at correlation lengths separately for each parameter
   !in the kalman filter emulator library
   ! IF (ALLOCATED(this%cor_factor_multi)) THEN
@@ -260,7 +259,7 @@ A0 = this%k_lam
 width = this%parameters_physical(1)*this%parameters(alpha,2)
 slope = this%parameters_physical(2)*this%parameters(alpha,3)
 n_cat = this%parameters_physical(3)*this%parameters(alpha,4)
-n_pipe = this%parameters_physical(4)*this%parameters(alpha,7)
+n_pipe = this%parameters_physical(4)*this%parameters(alpha,8)
 !the following governs the linear resrvoirs representing the surface inputs
 out=A0/n_pipe
 out(1:this%input_dim)=A0(1:this%input_dim)*width/n_cat*sqrt(slope)
@@ -278,11 +277,11 @@ rho=0
 ! D=1
 ! q=1
 
-r=sum((beta*(par1-par2))**gamma)
+r=sqrt(sum((beta*(par1-par2))**2))
 ! j=floor(D/2.0)+1+q
 ! rho = Sigma*max((1-r),0.0)**(j+1)*((j+1)*r+1)
 ! rho = Sigma*max((1-sum((beta*(par1-par2))**gamma)),0.0)**2
-rho = Sigma*exp(-r)
+rho = Sigma*exp(-r**gamma)
 ! rho = Sigma*(1-sum((beta*(par1-par2))**gamma))
 ! write (*,*) (1-sum((beta*(par1-par2))**gamma))
 end function rho
