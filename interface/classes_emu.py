@@ -238,8 +238,8 @@ class emu(object):
             # simulator=design.test_data[test_set,:]
             indices=np.arange(1,self.dd.shape[0])
             for i in np.nditer(indices):
-                plt.plot(time,design.data[i,:],'0.3',linewidth=0.3),
-            plt.plot(time,design.data[0,:],'0.3',linewidth=0.3,label="design data"),
+                plt.plot(time,design.data[i,:],'0.5',linewidth=0.3),
+            plt.plot(time,design.data[0,:],'0.5',linewidth=0.3,label="design data"),
             if "swmm" in what:
                 found=0
                 for i in range(design.n_test):

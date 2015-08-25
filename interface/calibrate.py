@@ -7,58 +7,70 @@ measurement_path="measurement.dat"
 pars_physical=[44.78,0.112,0.01,0.01,1000]
 rain=np.genfromtxt("rain_4_emu.dat")
 # hyperparam=[0.0000231,0.000231,2000000,0]
-hyperparam=[0.00000131,2000000,0]
+hyperparam=[0.0000091,3000000,0]
 cor_len=[10]*8
-lower_par=np.array([0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0,0])
+lower_par=np.array([0.5,0.5,0.5,0.5,0.5,0.5,0.5,1.0,0,0])
 upper_par=np.array([1.1,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1,1])
 design=e.design("design_data_full.dat","design_pars_full.dat",128)
-design.pick_first(16)
+# cor_len=[10]*2
+# lower_par=np.array([0.5,0.5,0,0])
+# upper_par=np.array([1.1,1.5,5,5])
+# design=e.design("design_data_twopar.dat","design_pars_twopar.dat",128)
+errscale=0.01
+design.pick_first(96)
 emu=e.emu(design,rain,pars_physical,hyperparam,cor_len,e_ini=3000,art="kalm",gamma=1)
 emu.condition()
-eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.5)
+eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=errscale)
 
-cf.plot_posteriors(eli,["samples_emulator_1000_0.005.dat","samples_emulator_1001_0.005.dat",
-                        "samples_emulator_1002_0.005.dat","samples_emulator_2000_0.005.dat"])
 
-# cf.plot_posteriors(eli,["samples_emulator_100_0.005.dat","samples_emulator_101_0.005.dat",
-#                         "samples_emulator_102_0.005.dat"])
-# %timeit emu.emulate(design.test_pars[10])
-# emu.plot(design,["emu","swmm"],swmm=swmm,likelihood=eli)
+
+# swmm=s.swmm()
+
+# emu.emulate(design.test_pars[1])
+# emu.plot(design,["emu","swmm","measurement"],swmm=swmm,likelihood=eli)
+
+
+
+# cf.plot_posteriors(eli,[cf.create_file_name(["samples","emulator",str(i),
+#                                              str(errscale),".dat"]) for i in np.arange(400,404)])
+
+# cf.plot_posteriors(eli,["samples_emulator_500_0.01_two.dat","samples_swmm_500_0.01_two.dat"])
 
 
 swmm=s.swmm()
 # eli.add_candidates(swmm)
 # eli.improve_emulator_for_lnlik(swmm,48,design)
-
 no_chains=24
-base_length=1000
+base_length=400
 new_len=base_length
 top_length=base_length*no_chains
 lower_length=int(np.floor(base_length*no_chains/3*2))
 from subprocess import call
+call(["rm","candidates_all.dat"])
 import emcee
-
-for k in np.arange(3):
-    eli.sampler_pars(no_chains,new_len)
-    sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
-                                    eli.lnprob,threads=8)
-    sampler.run_mcmc(eli.pos, eli.length)
-    eli.print_info_write_chain(sampler)
-    sampler.pool.close()
-    filename=cf.create_file_name(["samples","emulator",str(new_len),"0.005",".dat"])
-    samples=np.genfromtxt(filename)[np.random.randint(lower_length,top_length,size=16)][:,0:-2]
-    np.savetxt("candidates.dat",samples,fmt="%10.5f")
-    eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=0.005)
-    eli.add_candidates(swmm)
-    # call(["mv","candidates.dat","candidates_1.dat"])
-    new_len+=1
-
-eli.sampler_pars(no_chains,1000)
+# for k in np.arange(4):
+#     eli.sampler_pars(no_chains,new_len)
+#     sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
+#                                     eli.lnprob,threads=8)
+#     sampler.run_mcmc(eli.pos, eli.length)
+#     eli.print_info_write_chain(sampler)
+#     sampler.pool.close()
+#     filename=cf.create_file_name(["samples","emulator",str(new_len),str(errscale),".dat"])
+#     impsamples=np.genfromtxt(filename)[new_len+np.arange(8)*new_len-1][:,0:-2]
+#     np.savetxt("candidates.dat",impsamples,fmt="%10.5f")
+#     eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=errscale)
+#     eli.add_candidates(swmm)
+#     call(["./append_candidates.sh"])
+#     new_len+=1
+# new_len-=1
+eli.sampler_pars(no_chains,500)
 sampler = emcee.EnsembleSampler(eli.walkers, eli.ndim,
                                 eli.lnprob,threads=8)
 sampler.run_mcmc(eli.pos, eli.length)
 eli.print_info_write_chain(sampler)
 sampler.pool.close()
+
+# cf.plot_posteriors(eli,["samples_emulator_300_0.01.dat","samples_swmm_501_0.01.dat"])
 
 
 
@@ -125,72 +137,72 @@ sampler.pool.close()
 # param=np.genfromtxt("max_posterior_emulator_2000_0.01.dat")
 # emu.emulate(param[0:10])
 
-swmm=s.swmm()
 
-slikelihood=c.likelihood(measurement_path,swmm,lower_par,upper_par,errscale=0.005)
-
-param=np.hstack((design.test_pars[10],[0.2,0.3]))
-eli.lnprob(param)
-slikelihood.lnprob(param)
+# param=np.hstack((design.test_pars[10],[0.2,0.3]))
+# eli.lnprob(param)
+# slikelihood=c.likelihood(measurement_path,swmm,lower_par,upper_par,errscale=errscale)
+# slikelihood.lnprob(param)
 
 # emu.emulate(design.test_pars[17])
 # emu.plot(design,["emu","swmm","measurement"],likelihood=eli,swmm=swmm)
 
 
 
-# slikelihood=c.likelihood(measurement_path,swmm,lower_par,upper_par,errscale=0.01)
+# generate lliks
 
-samples=np.genfromtxt("samples_swmm_200_0.005.dat")[np.random.randint(2400,4800,size=200)]
+# no_of_sets=128
+# no_of_threads=8
+# samples_idx=new_len+np.random.randint(no_chains,size=no_of_sets)*new_len-1-np.random.randint(np.floor(new_len*0.3),size=no_of_sets)
+# samples=np.genfromtxt("samples_swmm_501_0.01.dat")[samples_idx]
 
+# samples=[np.hstack((design.test_pars[i],0.45,0.6)) for i in np.arange(128)]
 
-# samples=samples[:,0:7]
+# swmm=s.swmm()
+# slikelihood=c.likelihood(measurement_path,swmm,lower_par,upper_par,errscale=errscale)
+# def swmm_multi(index):
+#     return slikelihood.lnprob(samples[index]) 
+# def emu_multi(index):
+#     return eli.lnprob(samples[index]) 
+# lliks_s=[0]*no_of_sets
+# from multiprocessing import Pool
+# for i in np.arange(0,no_of_sets,no_of_threads):
+#     p=Pool(no_of_threads)
+#     output_parallel_session=p.map(swmm_multi,np.arange(i,i+no_of_threads).tolist())
+#     lliks_s[i:i+no_of_threads]=np.array(output_parallel_session)
+#     p.close()
 
-
-lliks_s=slikelihood.log_liks_ddata(samples)
-
-# samples=np.genfromtxt("lik_comp_samples.dat")
-# lliks_s=np.genfromtxt("lik_swmm.dat")
-
-# # hist of loglikelihood values for the emulator
-
-swmm=s.swmm()
-eli.add_candidates(swmm)
-
-lliks_e=eli.log_liks_ddata(samples)
-hist,bins=np.histogram(lliks_e,50)
-width = 0.91 * (bins[1] - bins[0])
-center = (bins[:-1] + bins[1:]) / 2
-import matplotlib.pyplot as plt
-plt.clf()
-plt.bar(center, hist, align='center', width=width)
-plt.savefig("hist_e.pdf")
-difference=np.abs(np.array(lliks_s)-np.array(lliks_e))
-hist,bins=np.histogram(difference,20)
-width = 0.91 * (bins[1] - bins[0])
-center = (bins[:-1] + bins[1:]) / 2
-import matplotlib.pyplot as plt
-plt.clf()
-plt.bar(center, hist, align='center', width=width)
-plt.savefig("hist_diff.pdf")
-
-
-
-
-
-cf.compare_two_posteriors(eli,"samples_swmm_2000_0.005.dat",
-                          "samples_swmm_2000_0.005.dat")
-
-cf.compare_two_posteriors(eli,"samples_swmm_2001_0.005.dat",
-                          "samples_swmm_2001_0.005.dat")
-# cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_2001_0.01.dat",
-#                           "samples_swmm_2000_0.01.dat")
-
-cf.compare_two_posteriors(eli,"samples_emulator_600_0.005.dat",
-                          "samples_swmm_200_0.005.dat")
-
-# cf.compare_two_posteriors(lower_par,upper_par,names,"samples_emulator_500_0.005.dat",
-#                           "samples_emulator_5000_0.005.dat")
-
-# cf.plot_triangle(lower_par,upper_par,names,"samples_swmm_2000_0.01.dat")
+# lliks_e=[0]*no_of_sets
+# for i in np.arange(0,no_of_sets,no_of_threads):
+#     p=Pool(no_of_threads)
+#     output_parallel_session=p.map(emu_multi,np.arange(i,i+no_of_threads).tolist())
+#     lliks_e[i:i+no_of_threads]=np.array(output_parallel_session)
+#     p.close()
+# # # hist of loglikelihood values for the emulator
+# hist,bins=np.histogram(lliks_s,50)
+# width = 0.91 * (bins[1] - bins[0])
+# center = (bins[:-1] + bins[1:]) / 2
+# import matplotlib.pyplot as plt
+# plt.clf()
+# plt.bar(center, hist, align='center', width=width)
+# plt.savefig("hist_e.pdf")
+# difference=np.array(lliks_s)-np.array(lliks_e)
+# print(np.mean(abs(difference)))
+# hist,bins=np.histogram(difference,20)
+# width = 0.91 * (bins[1] - bins[0])
+# center = (bins[:-1] + bins[1:]) / 2
+# import matplotlib.pyplot as plt
+# plt.clf()
+# plt.bar(center, hist, align='center', width=width)
+# plt.savefig("hist_diff.pdf")
 
 
+
+# # do some plotting
+
+# maxpo=np.genfromtxt("./max_posterior_emulator_1000_0.01.dat")
+# emu.emulate(maxpo[0:8])
+# emu.plot(design,["emu","swmm","measurement"],swmm=swmm,likelihood=eli)
+
+# eli.lnprob(maxpo)
+
+# slikelihood.lnprob(maxpo)

@@ -17,51 +17,6 @@ def sharpness(a,b):
 def symmetrize(a):
     return a + a.T - np.diag(a.diagonal())
 
-def compare_two_posteriors(eli,path1="samples_emu.dat",
-                           path2="samples_swmm.dat"):
-    from scipy import stats
-    import matplotlib as mpl
-    mpl.use('Agg')
-    import matplotlib.pyplot as plt
-    down=eli.lower_bounds
-    up=eli.upper_bounds
-    emu_samples=np.genfromtxt(path1)
-    swmm_samples=np.genfromtxt(path2)
-    plt.clf()
-    f,axes=plt.subplots(4,3,figsize=(16,16))
-    row=0
-    col=0
-    for i in np.arange(up.shape[0]):
-        handle_hist=axes[row,col].hist([emu_samples[:,i]],
-                                       bins=100,
-                                       alpha=1,
-                                       range=[down[i],up[i]],
-                                       color='crimson',
-                                       histtype='stepfilled',
-                                       normed=True)
-        handle_hist2=axes[row,col].hist([swmm_samples[:,i]],
-                                        bins=100,
-                                        alpha=0.73,
-                                        range=[down[i],up[i]],
-                                        color='black',
-                                        histtype='stepfilled',
-                                        normed=True)
-        axes[row,col].set_title(eli.names[i])
-        x=np.arange(down[i],up[i],0.01)
-        pri=np.zeros(x.shape[0])
-        for j in np.arange(x.shape[0]):
-            pri[j]=eli.prior_dist(x[j],i)
-        axes[row,col].plot(x,pri)
-        row+=1
-        if (row==4):
-            row=0
-            col+=1
-    f.tight_layout()
-    f.legend((handle_hist[2]),("First",),fancybox=True,loc=4)
-    f.legend((handle_hist2[2]),("Second",),fancybox=True,loc=4)
-    f.savefig("posterior.pdf",dpi=500)
-    plt.close()
-
 def plot_posteriors(eli,file_names):
     from scipy import stats
     import matplotlib as mpl
@@ -78,7 +33,7 @@ def plot_posteriors(eli,file_names):
     f,axes=plt.subplots(int(np.ceil(no_of_pars/3)),3,figsize=(16,16))
     row=0
     col=0
-    colors='brgcbrgcbrgcbrgc'
+    colors='bgrcmykwbgrcmykw'
     for i in np.arange(up.shape[0]):
         for j in np.arange(no_files):
             axes[row,col].hist([samples[j][:,i]],

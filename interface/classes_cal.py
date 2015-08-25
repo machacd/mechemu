@@ -34,8 +34,8 @@ class likelihood(object):
             self.result_producing_thing.emulate(param_e[0:-2])
         if self.result_producing_thing.typ=="swmm":
             self.result_producing_thing.run(param_e[0:-2])
-        data=stats.boxcox(abs(100+self.measurement),0.35)
-        mean=stats.boxcox(abs(100+self.result_producing_thing.result),0.35)
+        data=stats.boxcox((self.measurement>0)*self.measurement+0.01,0.35)
+        mean=stats.boxcox((self.result_producing_thing.result>0)*self.result_producing_thing.result+0.01,0.35)
         covariance=param_e[-1]*self.cov_mat_b_base+\
             self.cov_mat_e_base*param_e[-2]
         lik=-0.5*np.linalg.slogdet(covariance)[1]-\
@@ -154,13 +154,5 @@ class likelihood(object):
             self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
             self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
                                                       candidates[i]))
-            self.result_producing_thing.condition()
-
-
-    def log_liks_ddata(self,pars):
-        lliks=[0]*pars.shape[0]
-        for i in np.arange(pars.shape[0]):
-            lliks[i]=self.lnprob(pars[i])
-        return lliks
-
+        self.result_producing_thing.condition()
 
