@@ -7,8 +7,8 @@ IMPLICIT NONE
 type(linear_model_data) :: shallow_water
 
 integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: mean_d(m*n_u,dim_t,3),var_d(m*n_u,m*n_u,dim_t,3)
-real :: mean_obs(dim_obs*n_u,dim_t,2),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
+real :: mean_d(m*n_u,dim_t,2),var_d(m*n_u,m*n_u,dim_t,2)
+real :: mean_obs(dim_obs*n_u,dim_t),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
 real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
@@ -58,8 +58,8 @@ IMPLICIT NONE
 type(linear_model_data) :: shallow_water
 
 integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: mean_d(m*n_u,dim_t,3),var_d(m*n_u,m*n_u,dim_t,3)
-real :: mean_obs(dim_obs*n_u,dim_t,2),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
+real :: mean_d(m*n_u,dim_t,2),var_d(m*n_u,m*n_u,dim_t,3)
+real :: mean_obs(dim_obs*n_u,dim_t),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
 real :: emulated_output(dim_obs,dim_obs,dim_t,2)
 real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
 real :: param(no_pars)
@@ -102,7 +102,7 @@ shallow_water%parameters(n_u+1,:)=param
 IF (ALLOCATED(shallow_water%states_means)) THEN
 DEALLOCATE(shallow_water%states_means)
 ENDIF
-ALLOCATE(shallow_water%states_means(m*n_u,dim_t,3)) 
+ALLOCATE(shallow_water%states_means(m*n_u,dim_t,2)) 
 shallow_water%states_means=0  
 
 IF (ALLOCATED(shallow_water%states_variances)) THEN
@@ -114,7 +114,7 @@ shallow_water%states_variances=0
 IF (ALLOCATED(shallow_water%states_means_obs)) THEN
 DEALLOCATE(shallow_water%states_means_obs)
 ENDIF
-ALLOCATE(shallow_water%states_means_obs(dim_obs*n_u,dim_t,2))
+ALLOCATE(shallow_water%states_means_obs(dim_obs*n_u,dim_t))
 shallow_water%states_means_obs=0
 
 IF (ALLOCATED(shallow_water%states_variances_obs)) THEN
@@ -383,7 +383,7 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
   IF (ALLOCATED(this%states_means)) THEN
    DEALLOCATE(this%states_means)
   ENDIF
-  ALLOCATE(this%states_means(m*n_used,dim_t,3)) 
+  ALLOCATE(this%states_means(m*n_used,dim_t,2)) 
   this%states_means=0  
 
   IF (ALLOCATED(this%states_variances)) THEN
@@ -395,7 +395,7 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
   IF (ALLOCATED(this%states_means_obs)) THEN
     DEALLOCATE(this%states_means_obs)
   ENDIF
-  ALLOCATE(this%states_means_obs(dim_obs*n_used,dim_t,2))
+  ALLOCATE(this%states_means_obs(dim_obs*n_used,dim_t))
   this%states_means_obs=0
 
   IF (ALLOCATED(this%states_variances_obs)) THEN
@@ -412,12 +412,10 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
 
   ! initial 
   this%states_means(:,1,1) = rep_array(this%E_ini,n_used)
-    this%states_means(:,1,3) = rep_array(this%E_ini,n_used)
     this%states_variances(:,:,1,1) = var_V_1
 
   !observation prediction
-  this%states_means_obs(:,1,1) = MATMUL(H_d,this%states_means(:,1,1))
-  this%states_means_obs(:,1,2) = MATMUL(H_d,this%states_means(:,1,3))
+  this%states_means_obs(:,1) = MATMUL(H_d,this%states_means(:,1,1))
   this%states_variances_obs(:,:,1,1) = MATMUL(MATMUL(H_d,this%states_variances(:,:,1,1)),&
     TRANSPOSE(H_d))
 
@@ -431,7 +429,7 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
   A = matmul(matmul(this%states_variances(:,:,1,1),transpose(H_d)),&
     this%states_variances_obs(:,:,1,2))
   this%states_means(:,1,2) = this%states_means(:,1,1) + matmul(A, observations_des(:,1)-&
-    this%states_means_obs(:,1,1))
+    this%states_means_obs(:,1))
   this%states_variances(:,:,1,3) = this%states_variances(:,:,1,1) - matmul(matmul(A,H_d),&
     this%states_variances(:,:,1,1))
 
@@ -466,13 +464,11 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
     end do
 
     this%states_means(:,j,1) = matmul(F_D(:,:),this%states_means(:,j-1,2)) + g_D
-      this%states_means(:,j,3) = matmul(F_D(:,:),this%states_means(:,j-1,3)) + g_D
     this%states_variances(:,:,j,1) = matmul(matmul(F_D(:,:),this%states_variances(:,:,j-1,3)),&
       transpose(F_D(:,:))) + var_V_D
 
     !observation prediction
-    this%states_means_obs(:,j,1) = MATMUL(H_d,this%states_means(:,j,1))
-      this%states_means_obs(:,j,2) = MATMUL(H_d,this%states_means(:,j,3))
+    this%states_means_obs(:,j) = MATMUL(H_d,this%states_means(:,j,1))
     this%states_variances_obs(:,:,j,1) = MATMUL(MATMUL(H_d,this%states_variances(:,:,j,1)),&
       TRANSPOSE(H_d))
 
@@ -488,7 +484,7 @@ beta=1.0/(getdelta(this)*this%cor_factor_multi)
     A = matmul(matmul(this%states_variances(:,:,j,1),transpose(H_d)),&
       this%states_variances_obs(:,:,j,2))
     this%states_means(:,j,2) = this%states_means(:,j,1) + matmul(A,(observations_des(:,j)-&
-      this%states_means_obs(:,j,1)))
+      this%states_means_obs(:,j)))
      this%states_variances(:,:,j,3) = this%states_variances(:,:,j,1) - matmul(matmul(A,H_d),&
        this%states_variances(:,:,j,1))
 
@@ -606,7 +602,7 @@ do i_e=1,n_test
   IF (ALLOCATED(states_means_e)) THEN
     DEALLOCATE(states_means_e)
   ENDIF
-  ALLOCATE(states_means_e(m,dim_t,3))
+  ALLOCATE(states_means_e(m,dim_t,2))
   states_means_e=0
 
   IF (ALLOCATED(states_variances_e)) THEN
@@ -632,7 +628,6 @@ do i_e=1,n_test
 
   ! initial 
   states_means_e(:,1,1) = this%E_ini
-  states_means_e(:,1,3) = this%E_ini
   states_variances_e(:,:,1,1) = this%V_ini
   do i=1,n_used
     states_covariances_e((i-1)*m+1:i*m,:,1,1) = rho(this%V_ini,beta,this%gamma,pars_e,pars_des(i,:))
@@ -648,7 +643,7 @@ do i_e=1,n_test
   A = matmul(matmul(transpose(states_covariances_e(:,:,1,1)),transpose(H_d)),&
     this%states_variances_obs(:,:,1,2))
    states_means_e(:,1,2) = states_means_e(:,1,1) + matmul(A,(observations_des(:,1)-&
-    this%states_means_obs(:,1,1)))
+    this%states_means_obs(:,1)))
    states_variances_e(:,:,1,2) = states_variances_e(:,:,1,1) - matmul(matmul(A,H_d),&
      states_covariances_e(:,:,1,1))
    states_covariances_e(:,:,1,2)=states_covariances_e(:,:,1,1) - matmul(this%states_variances(:,:,1,1),&
@@ -687,7 +682,6 @@ do i_e=1,n_test
     Var_V_E=rho(this%Sigma_ini,beta,this%gamma,pars_e,pars_e)
 
     states_means_e(:,j,1) = matmul(F_E(j,:,:),states_means_e(:,j-1,2)) + g_E 
-      states_means_e(:,j,3) = matmul(F_E(j,:,:),states_means_e(:,j-1,3)) + g_E 
     states_variances_e(:,:,j,1) = matmul(F_E(j,:,:),matmul(states_variances_e(:,:,j-1,2),transpose(F_E(j,:,:))))+&
       Var_V_E
     states_covariances_e(:,:,j,1) = matmul(F_D(:,:),matmul(states_covariances_e(:,:,j-1,2),&
@@ -697,7 +691,7 @@ do i_e=1,n_test
     A = matmul(matmul(transpose(states_covariances_e(:,:,j,1)),transpose(H_d)),&
     this%states_variances_obs(:,:,j,2))
    states_means_e(:,j,2) = states_means_e(:,j,1) + matmul(A,(observations_des(:,j)-&
-    this%states_means_obs(:,j,1)))
+    this%states_means_obs(:,j)))
    states_variances_e(:,:,j,2) = states_variances_e(:,:,j,1) - matmul(matmul(A,H_d),&
      states_covariances_e(:,:,j,1))
    states_covariances_e(:,:,j,2)=states_covariances_e(:,:,j,1) - matmul(this%states_variances(:,:,j,1),&
@@ -889,7 +883,7 @@ do i_e=1,n_test
 IF (ALLOCATED(e_obs)) THEN
   DEALLOCATE(e_obs)
 ENDIF
-ALLOCATE(e_obs(dim_obs,dim_t,3))
+ALLOCATE(e_obs(dim_obs,dim_t,2))
 e_obs=0
 do j=1,dim_t
   e_obs(:,j,1)=matmul(H_e,states_means_e_smooth(:,j))
@@ -897,19 +891,12 @@ end do
 do i=1,dim_t
   this%e_obs_total(i_e,:,i,1)=e_obs(:,i,1)
 end do
-  e_obs(:,:,2)=matmul(H_e,states_means_e(:,:,3))
   if (variance_yes) then
   do i=1,dim_t
-    this%e_obs_total(i_e,:,i,2)=e_obs(:,i,2)
      this%var_e_obs_total(i_e,:,:,i)=&
        matmul(H_e,matmul(states_variances_e_smooth(:,:,i),transpose(H_e)))
   end do
   end if
-
-  do i=1,dim_t
-    this%e_obs_total(i_e,:,i,3)=e_obs(:,i,3)
-  end do
-
 end do
 
 

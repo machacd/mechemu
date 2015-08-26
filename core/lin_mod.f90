@@ -27,7 +27,7 @@ real,allocatable :: estimation_variance(:,:,:,:), estimation_mean(:,:), results(
 
 !kalman filter storage variables 
 real,allocatable :: states_means(:,:,:), states_variances(:,:,:,:),&
-states_means_obs(:,:,:),states_variances_obs(:,:,:,:),e_obs_total(:,:,:,:),&
+states_means_obs(:,:),states_variances_obs(:,:,:,:),e_obs_total(:,:,:,:),&
 var_e_obs_total(:,:,:,:)
 
 !initial matrices

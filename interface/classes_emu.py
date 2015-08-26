@@ -221,6 +221,10 @@ class emu(object):
         # print(self.cor_len)
         return(current)
 
+    def objective_mlik(self,hyperpars):
+        self.condition()
+
+
 
     def plot(self,design,what,likelihood=0,swmm=0):
         #«what» can contain:

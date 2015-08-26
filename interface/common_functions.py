@@ -147,3 +147,7 @@ def remove_duplicate_rows(matrix):
     sorted=np.any(matrix_d,axis=1)
     matrix=matrix[sorted]
     return(matrix)
+
+def send_notification(value1):
+    import requests
+    requests.get('http://maker.ifttt.com/trigger/python_msg/with/key/WXvFafnfwS26tgInnIILn',params={"value1":value1})

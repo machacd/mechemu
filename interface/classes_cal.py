@@ -151,8 +151,12 @@ class likelihood(object):
         candidates=cf.remove_duplicate_rows(candidates)
         for i in np.arange(candidates.shape[0]):
             swmm.run(candidates[i])
+            # add at the end
             self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
             self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
                                                       candidates[i]))
+            # remove something from the beginning, so the total number is constant
+            self.result_producing_thing.dd=np.delete(self.result_producing_thing.dd,0,0)
+            self.result_producing_thing.dp=np.delete(self.result_producing_thing.dp,0,0)
         self.result_producing_thing.condition()
 
