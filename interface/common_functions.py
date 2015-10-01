@@ -6,6 +6,9 @@ def nash_sut(observed,modelled):
     numer=sum((observed-modelled)**2)
     return 1-numer/denom
 
+def inverse_box_cox(transformed,lambd):
+    return(transformed*lambd+1)**(1/lambd)
+
 def rmse(a,b):
     return np.sqrt(sum((a-b)**2)/a.shape[0])
 
@@ -21,6 +24,7 @@ def plot_posteriors(eli,file_names):
     from scipy import stats
     import matplotlib as mpl
     mpl.use('Agg')
+    mpl.rcParams.update({'font.size': 20})
     import matplotlib.pyplot as plt
     no_files=np.array(file_names).shape[0]
     samples=list()
@@ -30,32 +34,142 @@ def plot_posteriors(eli,file_names):
     up=eli.upper_bounds
     no_of_pars=up.shape[0]
     plt.clf()
-    f,axes=plt.subplots(int(np.ceil(no_of_pars/3)),3,figsize=(16,16))
+    f,axes=plt.subplots(2,int(np.ceil(no_of_pars/2)),figsize=(24,12))
     row=0
     col=0
     colors='bgrcmykwbgrcmykw'
+    linetypes=['--','-','-','-','-','-','-']
     for i in np.arange(up.shape[0]):
-        for j in np.arange(no_files):
-            axes[row,col].hist([samples[j][:,i]],
-                                           bins=100,
-                                           alpha=0.8,
-                                           range=[down[i],up[i]],
-                                           color=colors[j],
-                                           histtype='stepfilled',
-                                           normed=True)
-        axes[row,col].set_title(eli.names[i])
+        # patches=[]
+        lines=[]
         x=np.arange(down[i],up[i],0.01)
         pri=np.zeros(x.shape[0])
         for j in np.arange(x.shape[0]):
             pri[j]=eli.prior_dist(x[j],i)
-        axes[row,col].plot(x,pri)
+        leg1,=axes[row,col].plot(x,pri,'k.-')
+        D1,p1=stats.ks_2samp(samples[no_files-1][:,i],samples[no_files-3][:,i])
+        D2,p2=stats.ks_2samp(samples[no_files-1][:,i],samples[no_files-2][:,i])
+        print(D1)
+        print(D2)
+        print("_________")
+        for j in np.arange(no_files):
+            kde=stats.gaussian_kde(samples[j][:,i])
+            kde.covariance_factor = lambda : .3
+            kde._compute_covariance()
+            line,=axes[row,col].plot(x,kde.evaluate(x),linestyle=linetypes[j],color=colors[j],lw=2)
+            lines.append(line)
+        axes[row,col].set_title(eli.names[i])
+        if i>up.shape[0]-3:
+            axes[row,col].set_ylim([0,15])
         row+=1
-        if (row==np.ceil(no_of_pars/3)):
+        if (row==2):
             row=0
             col+=1
-    f.tight_layout()
+    f.tight_layout(rect=[0, 0.08, 1, 1])
+    # f.legend([leg1,patches[2],patches[1],patches[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
+    f.legend([leg1,lines[2],lines[1],lines[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
     f.savefig("posteriors.pdf",dpi=500)
     plt.close()
+
+def plot_posteriors_iter(eli,file_names):
+    from scipy import stats
+    import matplotlib as mpl
+    mpl.use('Agg')
+    mpl.rcParams.update({'font.size': 20})
+    import matplotlib.pyplot as plt
+    no_files=np.array(file_names).shape[0]
+    samples=list()
+    for i in np.arange(no_files):
+        samples.append(np.genfromtxt(file_names[i]))
+    down=eli.lower_bounds
+    up=eli.upper_bounds
+    no_of_pars=up.shape[0]
+    plt.clf()
+    f,axes=plt.subplots(2,int(np.ceil(no_of_pars/2)),figsize=(24,12))
+    row=0
+    col=0
+    colors='bgcymrkwbgrcmykw'
+    linetypes=['--','-.',':','--','-','-','-']
+    kolmog_stats=np.zeros((2*no_files-1,up.shape[0]))
+    for i in np.arange(up.shape[0]):
+        # patches=[]
+        lines=[]
+        x=np.arange(down[i],up[i],0.01)
+        for j in np.arange(no_files):
+            Ds,ps=stats.ks_2samp(samples[j][:,i],samples[-1][:,i])
+            kolmog_stats[j*2,i]=Ds
+            if j>0:
+                D,p=stats.ks_2samp(samples[j][:,i],samples[j-1][:,i])
+                kolmog_stats[j*2-1,i]=D
+                # print(D)
+            kde=stats.gaussian_kde(samples[j][:,i])
+            kde.covariance_factor = lambda : .3
+            kde._compute_covariance()
+            line,=axes[row,col].plot(x,kde.evaluate(x),linestyle=linetypes[j],color=colors[j],lw=3)
+            lines.append(line)
+        axes[row,col].set_title(eli.names[i])
+        print("_________")
+        if i>up.shape[0]-3:
+            axes[row,col].set_ylim([0,15])
+        row+=1
+        if (row==2):
+            row=0
+            col+=1
+    f.tight_layout(rect=[0, 0.13, 1, 1])
+    np.savetxt("kolmog.dat",kolmog_stats,delimiter=" & ", fmt="%.2f")
+    # f.legend([leg1,patches[2],patches[1],patches[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
+    f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]],["0$^{th}$ iteration","1$^{st}$ iteration","2$^{nd}$ iteration","3$^{rd}$ iteration","4$^{th}$ iteration","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=2)
+    f.savefig("posteriors.pdf",dpi=500)
+    plt.close()
+
+
+def plot_posteriors_cumulative(eli,file_name,amount_of_samples):
+    from scipy import stats
+    import matplotlib as mpl
+    mpl.use('Agg')
+    mpl.rcParams.update({'font.size': 20})
+    samples=np.genfromtxt(file_name)
+    down=eli.lower_bounds
+    up=eli.upper_bounds
+    no_of_pars=up.shape[0]
+    plt.clf()
+    f,axes=plt.subplots(2,int(np.ceil(no_of_pars/2)),figsize=(24,12))
+    row=0
+    col=0
+    colors='bgrcmykwbgrcmykw'
+    linetypes=['--','-','-','-','-','-','-']
+    for i in np.arange(up.shape[0]):
+        # patches=[]
+        lines=[]
+        x=np.arange(down[i],up[i],0.01)
+        pri=np.zeros(x.shape[0])
+        for j in np.arange(x.shape[0]):
+            pri[j]=eli.prior_dist(x[j],i)
+        leg1,=axes[row,col].plot(x,pri,'k.-')
+        D1,p1=stats.ks_2samp(samples[no_files-1][:,i],samples[no_files-3][:,i])
+        D2,p2=stats.ks_2samp(samples[no_files-1][:,i],samples[no_files-2][:,i])
+        print(D1)
+        print(D2)
+        print("_________")
+        for j in np.arange(no_files):
+            kde=stats.gaussian_kde(samples[j][:,i])
+            kde.covariance_factor = lambda : .3
+            kde._compute_covariance()
+            line,=axes[row,col].plot(x,kde.evaluate(x),linestyle=linetypes[j],color=colors[j],lw=2)
+            lines.append(line)
+        axes[row,col].set_title(eli.names[i])
+        if i>up.shape[0]-3:
+            axes[row,col].set_ylim([0,15])
+        row+=1
+        if (row==2):
+            row=0
+            col+=1
+    f.tight_layout(rect=[0, 0.08, 1, 1])
+    # f.legend([leg1,patches[2],patches[1],patches[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
+    f.legend([leg1,lines[2],lines[1],lines[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
+    f.savefig("posteriors.pdf",dpi=500)
+    plt.close()
+
 
 
 def create_file_name(strings):
@@ -140,8 +254,8 @@ def closest_distance(vectors,vector):
     return norm
 
 def remove_duplicate_rows(matrix):
-    a,b,c,d,e,f,g,h=matrix.T
-    sorted=np.lexsort((a,b,c,d,e,f,g,h))
+    a,b=matrix.T
+    sorted=np.lexsort((a,b))
     matrix=matrix[sorted]
     matrix_d=np.diff(matrix,axis=0)
     sorted=np.any(matrix_d,axis=1)

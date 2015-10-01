@@ -27,7 +27,6 @@ class likelihood(object):
         self.cov_mat_b_base=cf.symmetrize(cov_mat_b_base)
         sds=np.zeros(self.t)+1
         self.cov_mat_e_base=np.diagflat(sds)
-        self.names=["Impervious area","Width","Slope","$n_{imp}$","storage imp.","storage per.","% of imp. area w/o dep. sto.","$n_{con}$","Tue","Zue","$\sigma^2_e$","$\sigma^2_b$"]
 
     def better_loglikelihood(self,param_e):
         if self.result_producing_thing.typ=="emulator":
@@ -124,6 +123,17 @@ class likelihood(object):
             prior=stats.gamma.pdf(par,1,scale=self.errscale)
         return prior
 
+    def bias_mean(self,param,model):
+        sigb=cf.inverse_box_cox(param[-1],0.35)
+        sige=cf.inverse_box_cox(param[-2],0.35)
+        covariance=param[-1]*self.cov_mat_b_base+\
+            self.cov_mat_e_base*param[-2]
+        result=np.dot(param[-1]*self.cov_mat_b_base,
+                   np.linalg.solve(covariance,self.measurement-model))
+        return result
+
+
+
 
 #service functions
 
@@ -144,19 +154,23 @@ class likelihood(object):
                                      str(self.length),str(self.errscale),".dat"])
         np.savetxt(filename,self.max_posterior,fmt='%10.5f')
 
+    def maxpo(self,sample_file):
+        samples=np.genfromtxt(sample_file)
+        max_posterior = np.zeros(samples.shape[1])
+        for i in np.arange(samples.shape[1]):
+            max_posterior[i]=stats.mode(samples[:,i])[0]
+            # print(stats.mode(samples[:,i])[1])
+        return max_posterior
+
+
 #extra experiments
 
     def add_candidates(self,swmm):
         candidates=np.genfromtxt("candidates.dat")
-        candidates=cf.remove_duplicate_rows(candidates)
         for i in np.arange(candidates.shape[0]):
             swmm.run(candidates[i])
-            # add at the end
             self.result_producing_thing.dd=np.vstack((self.result_producing_thing.dd,swmm.result))
             self.result_producing_thing.dp=np.vstack((self.result_producing_thing.dp,
                                                       candidates[i]))
-            # remove something from the beginning, so the total number is constant
-            self.result_producing_thing.dd=np.delete(self.result_producing_thing.dd,0,0)
-            self.result_producing_thing.dp=np.delete(self.result_producing_thing.dp,0,0)
         self.result_producing_thing.condition()
 

@@ -256,10 +256,22 @@ INTEGER :: alpha
 real :: width,slope,n_cat,n_pipe
 real :: A0(this%lambda_dim),out(this%lambda_dim)
 A0 = this%k_lam
-width = this%parameters_physical(1)*this%parameters(alpha,2)
-slope = this%parameters_physical(2)*this%parameters(alpha,3)
-n_cat = this%parameters_physical(3)*this%parameters(alpha,4)
-n_pipe = this%parameters_physical(4)*this%parameters(alpha,8)
+if (size(this%parameters,2)==2) then
+        width = this%parameters_physical(1)*this%parameters(alpha,2)
+        slope = this%parameters_physical(2)!*this%parameters(alpha,3)
+        n_cat = this%parameters_physical(3)!*this%parameters(alpha,5)
+        n_pipe = this%parameters_physical(4)!*this%parameters(alpha,8)
+elseif (size(this%parameters,2)==4) then
+        width = this%parameters_physical(1)*this%parameters(alpha,2)
+        slope = this%parameters_physical(2)*this%parameters(alpha,3)
+        n_cat = this%parameters_physical(3)!*this%parameters(alpha,5)
+        n_pipe = this%parameters_physical(4)!*this%parameters(alpha,8)
+elseif (size(this%parameters,2)==8) then
+        width = this%parameters_physical(1)*this%parameters(alpha,2)
+        slope = this%parameters_physical(2)*this%parameters(alpha,3)
+        n_cat = this%parameters_physical(3)*this%parameters(alpha,5)
+        n_pipe = this%parameters_physical(4)*this%parameters(alpha,8)
+endif
 !the following governs the linear resrvoirs representing the surface inputs
 out=A0/n_pipe
 out(1:this%input_dim)=A0(1:this%input_dim)*width/n_cat*sqrt(slope)
