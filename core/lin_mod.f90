@@ -9,11 +9,11 @@ type :: linear_model_data
 !input and design data of the emulator
 real,allocatable :: input(:), output(:,:), parameters(:,:), parameters_physical(:)
 real,allocatable :: F(:,:), g(:), H(:),I(:,:),cor_factor_multi(:),real_world(:),indices(:)
-!hyperparameters of the emulator
-real,allocatable :: k_lam(:),k_loss(:),k_delay(:)
+!hyperparam of the emulator
+real,allocatable :: hyperparam(:)
 real ::  gamma, cor_factor,delta_t,k_level,V_ini_inp,E_ini_inp
 INTEGER :: t_max, n_used, n_test_sets, m, dim_obs, no_of_pars,mode,&
-  lambda_dim,input_dim
+  input_dim
 
 !c_emu
 real :: T_indices_store(3),det
@@ -69,39 +69,6 @@ type(linear_model_data):: this
   allocate(this%input(tm))
   this%input=0
 
-!also quite provblem specific
-  IF (ALLOCATED(this%parameters_physical)) THEN
-      DEALLOCATE(this%parameters_physical)
-  ENDIF
-  allocate(this%parameters_physical(5)) !just a simplification, I don't care about all the pars
-  this%parameters_physical=0
-
-!read auxiliary parameters like lambdas and losses, from the file lambda.cfg
-
-IF (ALLOCATED(this%k_lam)) THEN
-  DEALLOCATE(this%k_lam)
-ENDIF
-ALLOCATE(this%k_lam(this%lambda_dim))
-this%k_lam=0
-
-IF (ALLOCATED(this%k_loss)) THEN
-  DEALLOCATE(this%k_loss)
-ENDIF
-ALLOCATE(this%k_loss(this%input_dim))
-this%k_loss=0
-
-IF (ALLOCATED(this%k_delay)) THEN
-  DEALLOCATE(this%k_delay)
-ENDIF
-ALLOCATE(this%k_delay(this%input_dim))
-this%k_delay=0
-
-
-!next loop is also PROBLEM SPECIFIC
- ! this%input=this%input/(60.0/this%delta_t)*0.001 ! convert to m/(min*delta_t)
-  this%input=this%input*this%parameters_physical(5)*10000 ! multiply by the area
-  ! (in ha)
-
 ! create unitary matrix to save few lines...
 
   IF (ALLOCATED(this%I)) THEN
@@ -124,24 +91,16 @@ this%z_prime=0
 
 end subroutine
 
-function getF(this, alpha) result(out)
+function getF(this, alpha) result(F)
 type(linear_model_data) :: this
 INTEGER :: alpha
 integer :: i
-real :: out(this%m,this%m),lambda_store(this%lambda_dim)
-out=0
-lambda_store=lambda(this,alpha)
-DO i=1,this%m   
-    out(i,i)=-lambda_store(i)
-    !this condition is only for the purpose of writing a paper...
-    IF (i>this%input_dim) THEN 
-         out(i,i-1)=lambda_store(i-1)
-        IF (this%input_dim==2) THEN 
-         out(3,1)=lambda_store(1)
-         out(3,2)=lambda_store(2)
-        endif
-    ENDIF
-END DO
+real :: F(this%m,this%m)
+real,allocatable :: p(:),h(:)
+p=this%parameters(alpha,:)
+h=this%hyperparam
+! @configOnF
+! @configOffF
 End function
 
 subroutine allocate_initial(this)
@@ -183,35 +142,35 @@ out=0
 out=expo_mat(getF(this,alpha),this%delta_t,this%m)
 End function
 
-function getk(this, alpha,time,Fexp) result(out)
+function getk(this, alpha,t,Fexp) result(out)
 type(linear_model_data) :: this
-INTEGER :: alpha, time,i,a
+INTEGER :: alpha, t,a
 real :: out(this%m)
+real :: b(this%m),i(this%t_max)
 real :: Fexp(this%m,this%m)
+real,allocatable :: p(:),h(:)
 out=0
-! input is only on the first of the reservoirs.
-do i =1,this%input_dim
-  if (time-this%k_delay(i) .gt. 1) then
-    out(i)=this%input(time-int(this%k_delay(i)))*this%k_loss(i)*this%parameters(alpha,1)
-  else
-    out(i)=0
-  end if
-end do
+
+p=this%parameters(alpha,:)
+h=this%hyperparam
+i=this%input
+
+! @configOnB
+! @configOffB
 out=-matmul(matmul(inv_mat(getF(this,alpha))&
-    ,this%I-Fexp),out)
+    ,this%I-Fexp),b)
 End function
 
-function getH(this, alpha) result(out)
+function getH(this, alpha) result(Hp)
 type(linear_model_data) :: this
 INTEGER :: alpha
-real :: out(this%dim_obs,this%m),lambda_store(this%lambda_dim)
-out=0
-lambda_store=lambda(this,alpha)
-! currently max 2 observations points are implemented, feel free to add more
- if (this%dim_obs>1) then
-   out(this%dim_obs-1,1)=this%k_level ! [m3s-1]
- end if
-out(this%dim_obs,this%m)=lambda_store(this%lambda_dim) ! [m3s-1]
+real :: Hp(this%dim_obs,this%m)
+real,allocatable :: p(:),h(:)
+Hp=0
+p=this%parameters(alpha,:)
+h=this%hyperparam
+! @configOnH
+! @configOffH
 End function
 
 function getdelta(this)
@@ -248,34 +207,6 @@ subroutine resample_pars(this)
 
 
 end subroutine
-
-
-FUNCTION lambda(this, alpha) result(out)
-type(linear_model_data) :: this
-INTEGER :: alpha
-real :: width,slope,n_cat,n_pipe
-real :: A0(this%lambda_dim),out(this%lambda_dim)
-A0 = this%k_lam
-if (size(this%parameters,2)==2) then
-        width = this%parameters_physical(1)*this%parameters(alpha,2)
-        slope = this%parameters_physical(2)!*this%parameters(alpha,3)
-        n_cat = this%parameters_physical(3)!*this%parameters(alpha,5)
-        n_pipe = this%parameters_physical(4)!*this%parameters(alpha,8)
-elseif (size(this%parameters,2)==4) then
-        width = this%parameters_physical(1)*this%parameters(alpha,2)
-        slope = this%parameters_physical(2)*this%parameters(alpha,3)
-        n_cat = this%parameters_physical(3)!*this%parameters(alpha,5)
-        n_pipe = this%parameters_physical(4)!*this%parameters(alpha,8)
-elseif (size(this%parameters,2)==8) then
-        width = this%parameters_physical(1)*this%parameters(alpha,2)
-        slope = this%parameters_physical(2)*this%parameters(alpha,3)
-        n_cat = this%parameters_physical(3)*this%parameters(alpha,5)
-        n_pipe = this%parameters_physical(4)*this%parameters(alpha,8)
-endif
-!the following governs the linear resrvoirs representing the surface inputs
-out=A0/n_pipe
-out(1:this%input_dim)=A0(1:this%input_dim)*width/n_cat*sqrt(slope)
-END FUNCTION lambda
 
 
 function rho(Sigma, beta, gamma, par1, par2)

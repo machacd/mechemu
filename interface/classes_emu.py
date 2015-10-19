@@ -53,7 +53,7 @@ class design(object):
 
 
 class emu(object):
-    def __init__(self,design,inp,other_pars,hyperparameters,cor_len,
+    def __init__(self,design,inp,hyperparam,cor_len,
                  m=1,d_obs=1,e_ini=1000,v_ini=1000,
                  art="kalm",input_dim=1,gamma=2):
         self.m=m
@@ -61,15 +61,14 @@ class emu(object):
         self.dp=design.pars
         self.dd=design.data
         self.inp=inp
-        self.other_pars=other_pars
         self.e_ini=e_ini
         self.v_ini=v_ini
         self.art=art
         self.cor_len=cor_len
         self.gamma=gamma
-        self.lambda_dim=m
+        self.hyp_dim=len(hyperparam)
         self.input_dim=input_dim
-        self.hyperparameters=hyperparameters
+        self.hyperparam=hyperparam
         self.typ="emulator"
 
     def condition(self):
@@ -82,12 +81,11 @@ class emu(object):
                                                 self.cor_len,
                                                 self.gamma,
                                                 self.input_dim,
-                                                self.lambda_dim,
-                                                self.hyperparameters,
+                                                self.hyp_dim,
+                                                self.hyperparam,
                                                 self.dd,
                                                 self.dp,
                                                 self.inp,
-                                                self.other_pars,
                                                 self.v_ini,
                                                 self.e_ini)
         elif self.art=="nonkalm":
@@ -99,12 +97,11 @@ class emu(object):
                                                 self.cor_len,
                                                 self.gamma,
                                                 self.input_dim,
-                                                self.lambda_dim,
-                                                self.hyperparameters,
+                                                self.hyp_dim,
+                                                self.hyperparam,
                                                 self.dd,
                                                 self.dp,
                                                 self.inp,
-                                                self.other_pars,
                                                 self.v_ini,
                                                 self.e_ini)
 
@@ -123,13 +120,12 @@ class emu(object):
                                                self.cor_len,
                                                self.gamma,
                                                self.input_dim,
-                                               self.lambda_dim,
-                                               self.hyperparameters,
+                                               self.hyp_dim,
+                                               self.hyperparam,
                                                self.pars,
                                                self.dd,
                                                self.dp,
                                                self.inp,
-                                               self.other_pars,
                                                self.v_ini,
                                                self.e_ini)
             self.result=emulated[0,0,:,0]
@@ -143,13 +139,12 @@ class emu(object):
                                                self.cor_len,
                                                self.gamma,
                                                self.input_dim,
-                                               self.lambda_dim,
-                                               self.hyperparameters,
+                                               self.hyp_dim,
+                                               self.hyperparam,
                                                self.pars,
                                                self.dd,
                                                self.dp,
                                                self.inp,
-                                               self.other_pars,
                                                self.v_ini,
                                                self.e_ini)
             
@@ -223,7 +218,7 @@ class emu(object):
 
     def objective_hyperpars(self,pars):
         self.cor_len=[pars[0]]*self.dp.shape[1]
-        self.hyperparameters=np.hstack((pars[1:3],0))
+        self.hyperparam=np.hstack((pars[1:3],0))
         t=self.dd.shape[1]
         self.condition()
         suma=0

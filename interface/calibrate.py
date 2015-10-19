@@ -3,16 +3,16 @@ import classes_emu as e
 import classes_cal as c
 import classes_swmm as s
 import common_functions as cf
-from mpi4py import MPI
+# from mpi4py import MPI
 from subprocess import call
 import emcee
 import sys
 from emcee.utils import MPIPool
 measurement_path="measurement.dat"
-pars_physical=[44.78,0.112,0.01,0.01,1000]
-rain=np.genfromtxt("rain_4_emu.dat")
+# pars_physical=[44.78,0.112,0.01,0.01,1000]
+rain=np.genfromtxt("rain_4_emu.dat")*1000*1000
 # hyperparam=[0.0000231,0.000231,2000000,0]
-hyperparam=[0.00000973,2050407,0]
+hyperparam=[0.0273,2,0,44.78,0.112,0.01,0.01]
 # cor_len=[1]*2
 # lower_par=np.array([0.5,0.5,0,0])
 # upper_par=np.array([1.1,1.5,1,1])
@@ -25,20 +25,23 @@ hyperparam=[0.00000973,2050407,0]
 # design=e.design("design_data_four.dat","design_pars_four.dat",48)
 # names=["Impervious area","Width","Slope","stor. imp.","$\sigma^2_e$","$\sigma^2_b$"]
 # design.pick_first(48)
-cor_len=[5]*8
+cor_len=[1]*8
 lower_par=np.array([0.5,0.5,0.5,0.5,0.5,0.5,0.5,1.0,0,0])
 upper_par=np.array([1.1,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1,1])
 design=e.design("design_data_full.dat","design_pars_full.dat",64)
 names=["Impervious area","Width","Slope","stor. imp.","$n_{imp}$","stor. per.",
        "% imp. area w/o dep. stor.","$n_{con}$","$\sigma^2_e$","$\sigma^2_b$"]
 design.pick_first(64)
-emu=e.emu(design,rain,pars_physical,hyperparam,cor_len,e_ini=3000,art="kalm",gamma=1.5)
+emu=e.emu(design,rain,hyperparam,cor_len,e_ini=3000,art="kalm",gamma=1.5)
 emu.condition()
 errscale=0.01
 eli=c.likelihood(measurement_path,emu,lower_par,upper_par,errscale=errscale)
 eli.names=names
-# swmm=s.swmm()
-# emu.emulate(design.test_pars[2])
+emu.emulate(design.test_pars[2])
+
+swmm=s.swmm()
+
+emu.plot(design,["emu","swmm"],swmm=swmm,likelihood=eli)
 
 pool = MPIPool()
 if not pool.is_master():

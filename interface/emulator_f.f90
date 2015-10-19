@@ -1,18 +1,17 @@
 subroutine condition_kalman(mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,&
-                dim_t,no_pars,cor_len,gamma,input_dim,lambda_dim,hyperparam,&
-                design_data,design_pars,rain,pars_physical,v_ini,e_ini)
+                dim_t,no_pars,cor_len,gamma,input_dim,hyp_dim,hyperparam,&
+                design_data,design_pars,rain,v_ini,e_ini)
 USE lin_mod
 IMPLICIT NONE
 
 type(linear_model_data) :: shallow_water
 
-integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
+integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,hyp_dim
 real :: mean_d(m*n_u,dim_t,2),var_d(m*n_u,m*n_u,dim_t,2)
 real :: mean_obs(dim_obs*n_u,dim_t),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
+real :: hyperparam(hyp_dim),cor_len(no_pars),v_ini,e_ini,gamma
 real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
-real :: pars_physical(5)
 
 shallow_water%m=m
 shallow_water%dim_obs=dim_obs
@@ -24,21 +23,13 @@ shallow_water%gamma=gamma
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
-shallow_water%lambda_dim=lambda_dim      
 call read_data(shallow_water)
 call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
 shallow_water%input=rain
-shallow_water%parameters_physical=pars_physical
+shallow_water%hyperparam=hyperparam
 call allocate_initial(shallow_water)
-shallow_water%k_lam=hyperparam(1:lambda_dim)
-shallow_water%k_loss=hyperparam(lambda_dim+1:lambda_dim+input_dim)
-shallow_water%k_delay=hyperparam(lambda_dim+input_dim+1&
-        :lambda_dim+2*input_dim)
-if (dim_obs>1) then 
-        shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
-endif
 
 call condition_kalman_sub(shallow_water)
 mean_d=shallow_water%states_means
@@ -49,23 +40,22 @@ var_obs=shallow_water%states_variances_obs
 END subroutine
 
 subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,&
-        dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,lambda_dim,hyperparam,param,&
-        design_data,design_pars,rain,pars_physical,v_ini,e_ini)
+        dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,hyp_dim,hyperparam,param,&
+        design_data,design_pars,rain,v_ini,e_ini)
 USE lin_mod
 
 IMPLICIT NONE
 
 type(linear_model_data) :: shallow_water
 
-integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
+integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,hyp_dim
 real :: mean_d(m*n_u,dim_t,2),var_d(m*n_u,m*n_u,dim_t,3)
 real :: mean_obs(dim_obs*n_u,dim_t),var_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2)
 real :: emulated_output(dim_obs,dim_obs,dim_t,2)
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
+real :: hyperparam(hyp_dim),cor_len(no_pars),v_ini,e_ini,gamma
 real :: param(no_pars)
 real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
-real :: pars_physical(5)
 
 
  
@@ -79,21 +69,13 @@ shallow_water%gamma=gamma
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
-shallow_water%lambda_dim=lambda_dim      
 call read_data(shallow_water)
 call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
 shallow_water%input=rain
-shallow_water%parameters_physical=pars_physical
 call allocate_initial(shallow_water)
-shallow_water%k_lam=hyperparam(1:lambda_dim)
-shallow_water%k_loss=hyperparam(lambda_dim+1:lambda_dim+input_dim)
-shallow_water%k_delay=hyperparam(lambda_dim+input_dim+1&
-        :lambda_dim+2*input_dim)
-if (dim_obs>1) then 
-        shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
-endif
+shallow_water%hyperparam=hyperparam
 shallow_water%parameters(n_u+1,:)=param
 
 
@@ -152,18 +134,17 @@ end subroutine aprod
 
 
 subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,&
-        lambda_dim,hyperparam,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
+        hyp_dim,hyperparam,design_data,design_pars,rain,v_ini,e_ini)
 USE lin_mod
 USE service_functions
 IMPLICIT NONE
 type(linear_model_data):: shallow_water
 
-integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
+integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,hyp_dim
+real :: hyperparam(hyp_dim),cor_len(no_pars),v_ini,e_ini,gamma
 real :: z_prime(n_u*dim_t*m)
 real :: design_data(n_u,dim_t*dim_obs),design_pars(n_u,no_pars)
 real :: rain(dim_t)
-real :: pars_physical(5)
 
 shallow_water%m=m
 shallow_water%n_used=n_u
@@ -171,27 +152,19 @@ shallow_water%dim_obs=dim_obs
 shallow_water%t_max=dim_t
 shallow_water%no_of_pars=no_pars
 shallow_water%cor_factor_multi=cor_len      
+shallow_water%hyperparam=hyperparam
 shallow_water%gamma=gamma      
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
-shallow_water%lambda_dim=lambda_dim      
 
 call read_data(shallow_water)
 call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
 shallow_water%input=rain
-shallow_water%parameters_physical=pars_physical
 call allocate_initial(shallow_water)
 
-shallow_water%k_lam=hyperparam(1:lambda_dim)
-shallow_water%k_loss=hyperparam(lambda_dim+1:lambda_dim+input_dim)
-shallow_water%k_delay=hyperparam(lambda_dim+input_dim+1&
-        :lambda_dim+2*input_dim)
-if (dim_obs>1) then 
-        shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
-endif
 
 write (*,*) "write g to file"
 call write_g_to_file(shallow_water)
@@ -209,20 +182,19 @@ END subroutine condition_nonkalman
 
 subroutine evaluate_nonkalman(emulated_output,z_prime,m,dim_obs,&
                 n_u,dim_t,no_pars,cor_len,gamma,input_dim,&
-                lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
+                hyp_dim,hyperparam,param,design_data,design_pars,rain,v_ini,e_ini)
 USE lin_mod
 USE service_functions
 IMPLICIT NONE
 type(linear_model_data):: shallow_water
 
-integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
+integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,hyp_dim
+real :: hyperparam(hyp_dim),cor_len(no_pars),v_ini,e_ini,gamma
 real :: z_prime(m*n_u*dim_t)
 real :: param(no_pars)
 real :: emulated_output(dim_obs*dim_t)
 real :: design_data(n_u,dim_t*dim_obs),design_pars(n_u,no_pars)
 real :: rain(dim_t)
-real :: pars_physical(5)
 
 shallow_water%m=m
 shallow_water%n_used=n_u
@@ -234,7 +206,7 @@ shallow_water%gamma=gamma
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
-shallow_water%lambda_dim=lambda_dim  
+shallow_water%hyperparam=hyperparam
 
  
 call read_data(shallow_water)
@@ -242,16 +214,8 @@ call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
 shallow_water%input=rain
-shallow_water%parameters_physical=pars_physical
 call allocate_initial(shallow_water)
 
-shallow_water%k_lam=hyperparam(1:lambda_dim)
-shallow_water%k_loss=hyperparam(lambda_dim+1:lambda_dim+input_dim)
-shallow_water%k_delay=hyperparam(lambda_dim+input_dim+1&
-        :lambda_dim+2*input_dim)
-if (dim_obs>1) then 
-        shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
-endif
 shallow_water%parameters(n_u+1,:)=param
 shallow_water%z_prime=z_prime
 
@@ -261,19 +225,18 @@ END subroutine evaluate_nonkalman
 
 subroutine evaluate_nonkalman_variance(variance_output,m,dim_obs,&
                 n_u,dim_t,no_pars,cor_len,gamma,input_dim,&
-                lambda_dim,hyperparam,param,design_data,design_pars,rain,pars_physical,v_ini,e_ini)
+                hyp_dim,hyperparam,param,design_data,design_pars,rain,v_ini,e_ini)
 USE lin_mod
 USE service_functions
 IMPLICIT NONE
 type(linear_model_data):: shallow_water
 
-integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,lambda_dim
-real :: hyperparam(2*input_dim+lambda_dim+dim_obs-1),cor_len(no_pars),v_ini,e_ini,gamma
+integer :: m,n_u,dim_t,dim_obs,no_pars,input_dim,hyp_dim
+real :: hyperparam(hyp_dim),cor_len(no_pars),v_ini,e_ini,gamma
 real :: param(no_pars)
 real :: variance_output(dim_obs*dim_t,dim_obs*dim_t)
 real :: design_data(n_u,dim_t*dim_obs),design_pars(n_u,no_pars)
 real :: rain(dim_t)
-real :: pars_physical(5)
 
 shallow_water%m=m
 shallow_water%n_used=n_u
@@ -285,23 +248,15 @@ shallow_water%gamma=gamma
 shallow_water%V_ini_inp=v_ini      
 shallow_water%e_ini_inp=e_ini      
 shallow_water%input_dim=input_dim      
-shallow_water%lambda_dim=lambda_dim  
+shallow_water%hyperparam=hyperparam
  
 call read_data(shallow_water)
 call resample_pars(shallow_water)
 shallow_water%output=design_data
 shallow_water%parameters(1:n_u,:)=design_pars
 shallow_water%input=rain
-shallow_water%parameters_physical=pars_physical
 call allocate_initial(shallow_water)
 
-shallow_water%k_lam=hyperparam(1:lambda_dim)
-shallow_water%k_loss=hyperparam(lambda_dim+1:lambda_dim+input_dim)
-shallow_water%k_delay=hyperparam(lambda_dim+input_dim+1&
-        :lambda_dim+2*input_dim)
-if (dim_obs>1) then 
-        shallow_water%k_level=hyperparam(lambda_dim+2*input_dim+1)
-endif
 shallow_water%parameters(n_u+1,:)=param
 
 call write_g_to_file_var(shallow_water)
