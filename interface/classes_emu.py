@@ -55,7 +55,7 @@ class design(object):
 class emu(object):
     def __init__(self,design,inp,hyperparam,cor_len,
                  m=1,d_obs=1,e_ini=1000,v_ini=1000,
-                 art="kalm",input_dim=1,gamma=2):
+                 art="kalm",input_dim=1,gamma=2,variance='false'):
         self.m=m
         self.d_obs=d_obs
         self.dp=design.pars
@@ -70,6 +70,7 @@ class emu(object):
         self.input_dim=input_dim
         self.hyperparam=hyperparam
         self.typ="emulator"
+        self.variance=variance
 
     def condition(self):
         if self.art=="kalm":
@@ -127,8 +128,10 @@ class emu(object):
                                                self.dp,
                                                self.inp,
                                                self.v_ini,
-                                               self.e_ini)
+                                               self.e_ini,
+                                               self.variance)
             self.result=emulated[0,0,:,0]
+            self.var=emulated[0,0,:,1]
         elif self.art=="nonkalm":
             self.result=emulib.evaluate_nonkalman(self.conditioned,
                                                self.m,

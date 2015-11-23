@@ -23,7 +23,7 @@ with open("../core/lin_mod.f90") as f:
     sourceFile=f.readlines()
 
 # parse the config file as set by the user
-with open("config.cfg") as f:
+with open(sys.argv[1]) as f:
     configFile=f.readlines()
 
 

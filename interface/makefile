@@ -8,7 +8,7 @@ emulator: service_functions.o lin_mod_changed.o symmlq.o
 service_functions.o: ../core/service_functions.f90
 	$(FCOMPILER) $(FLAGS) ../core/service_functions.f90 $(LIBS)
 lin_mod_changed.o: ../core/lin_mod_changed.f90
-	python parseConfig.py
+	python parseConfig.py $(CONFIG_FILE)
 	$(FCOMPILER) $(FLAGS) $^ $(LIBS)
 emulator_f.o: emulator_f.f90
 	$(FCOMPILER) $(FLAGS) $^ $(LIBS)

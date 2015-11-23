@@ -41,7 +41,7 @@ END subroutine
 
 subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,&
         dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,hyp_dim,hyperparam,param,&
-        design_data,design_pars,rain,v_ini,e_ini)
+        design_data,design_pars,rain,v_ini,e_ini,variance)
 USE lin_mod
 
 IMPLICIT NONE
@@ -56,9 +56,8 @@ real :: hyperparam(hyp_dim),cor_len(no_pars),v_ini,e_ini,gamma
 real :: param(no_pars)
 real :: design_data(n_u*dim_obs,dim_t),design_pars(n_u,no_pars)
 real :: rain(dim_t)
+logical :: variance
 
-
- 
 shallow_water%m=m
 shallow_water%dim_obs=dim_obs
 shallow_water%t_max=dim_t
@@ -77,7 +76,7 @@ shallow_water%input=rain
 call allocate_initial(shallow_water)
 shallow_water%hyperparam=hyperparam
 shallow_water%parameters(n_u+1,:)=param
-
+shallow_water%variance=variance
 
 !Allocate some initial vectors.
 
@@ -104,8 +103,6 @@ DEALLOCATE(shallow_water%states_variances_obs)
 ENDIF
 ALLOCATE(shallow_water%states_variances_obs(dim_obs*n_u,dim_obs*n_u,dim_t,2))
 shallow_water%states_variances_obs=0
-
-
 
 shallow_water%states_means=mean_d
 shallow_water%states_means_obs=mean_obs
@@ -482,8 +479,6 @@ real,ALLOCATABLE :: var_DE(:,:),var_DE_prevY(:,:),var_DE_allY(:,:),&
 ! observations
 real,ALLOCATABLE :: e_obs(:,:,:), H_e(:,:)
 
-logical :: variance_yes
-
 !estimation variables, will be allocated only if it is ON!
 
 dim_obs=this%dim_obs
@@ -803,8 +798,7 @@ do i_e=1,n_test
     E_DE=E_DE+matmul(Mm,E_DE_allY- E_DE_prevY )
     states_means_smooth(:,j)=E_DE(1:m*n_used)
     states_means_e_smooth(:,j)=E_DE(m*n_used+1:m*(n_used+1))
-    variance_yes=.false.
-    if (variance_yes) then
+    if (this%variance) then
       var_DE(1:m*n_used,1:m*n_used)=states_variances_smooth(:,:,j)
       var_DE(m*n_used+1:m*(n_used+1),1:m*n_used)=transpose(states_covariances_smooth(:,:,j))
       var_DE(1:m*n_used,m*n_used+1:m*(n_used+1))=states_covariances_smooth(:,:,j)
@@ -846,7 +840,7 @@ end do
 do i=1,dim_t
   this%e_obs_total(i_e,:,i,1)=e_obs(:,i,1)
 end do
-  if (variance_yes) then
+  if (this%variance) then
   do i=1,dim_t
      this%var_e_obs_total(i_e,:,:,i)=&
        matmul(H_e,matmul(states_variances_e_smooth(:,:,i),transpose(H_e)))

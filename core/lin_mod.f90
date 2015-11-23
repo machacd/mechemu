@@ -29,6 +29,7 @@ real,allocatable :: estimation_variance(:,:,:,:), estimation_mean(:,:), results(
 real,allocatable :: states_means(:,:,:), states_variances(:,:,:,:),&
 states_means_obs(:,:),states_variances_obs(:,:,:,:),e_obs_total(:,:,:,:),&
 var_e_obs_total(:,:,:,:)
+logical :: variance
 
 !initial matrices
 real,allocatable :: sigma_ini(:,:),v_ini(:,:),e_ini(:)
@@ -129,7 +130,7 @@ ENDIF
 ALLOCATE(this%sigma_ini(this%m,this%m))
 this%sigma_ini=0.0
 do i=1,this%m
-  this%sigma_ini(i,i)=1
+  this%sigma_ini(i,i)=0.001
 end do
 
 end subroutine

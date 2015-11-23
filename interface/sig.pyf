@@ -21,7 +21,7 @@ python module emulib ! in
             integer intent(in) :: input_dim
             integer intent(in) :: hyp_dim
         end subroutine condition_kalman
-        subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,hyp_dim,hyperparam,param,design_data,design_pars,rain,v_ini,e_ini) 
+        subroutine evaluate_kalman(emulated_output,mean_d,mean_obs,var_d,var_obs,m,dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,hyp_dim,hyperparam,param,design_data,design_pars,rain,v_ini,e_ini,variance) 
             real dimension(dim_obs,dim_obs,dim_t,2),depend(dim_obs,dim_t),intent(out) :: emulated_output
             real dimension(m*n_u,dim_t,2),depend(m,n_u,dim_t),intent(in) :: mean_d
             real dimension(dim_obs*n_u,dim_t),depend(dim_obs,n_u,dim_t),intent(in) :: mean_obs
@@ -43,6 +43,7 @@ python module emulib ! in
             real intent(in) :: e_ini
             integer intent(in) :: input_dim
             integer intent(in) :: hyp_dim
+            logical intent(in) :: variance
         end subroutine evaluate_kalman
         subroutine condition_nonkalman(z_prime,m,dim_obs,n_u,dim_t,no_pars,cor_len,gamma,input_dim,hyp_dim,hyperparam,design_data,design_pars,rain,v_ini,e_ini)
             real dimension(hyp_dim),depend(hyp_dim),intent(in) :: hyperparam

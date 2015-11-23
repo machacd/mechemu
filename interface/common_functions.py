@@ -89,7 +89,7 @@ def plot_posteriors_iter(eli,file_names):
     row=0
     col=0
     colors='bgcymrkwbgrcmykw'
-    linetypes=['--','-.',':','--','-','-','-']
+    linetypes=['--','-.','-.','-.','-.','-','-']
     kolmog_stats=np.zeros((2*no_files-1,up.shape[0]))
     for i in np.arange(up.shape[0]):
         # patches=[]
@@ -118,7 +118,7 @@ def plot_posteriors_iter(eli,file_names):
     f.tight_layout(rect=[0, 0.13, 1, 1])
     np.savetxt("kolmog.dat",kolmog_stats,delimiter=" & ", fmt="%.2f")
     # f.legend([leg1,patches[2],patches[1],patches[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
-    f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5]],["0$^{th}$ iteration","1$^{st}$ iteration","2$^{nd}$ iteration","3$^{rd}$ iteration","4$^{th}$ iteration","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=2)
+    f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5],lines[6]],["noniterative (128)","0$^{th}$ iteration (64)","1$^{st}$ iteration (80)","2$^{nd}$ iteration (96)","3$^{rd}$ iteration (112)","4$^{th}$ iteration (128)","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=3)
     f.savefig("posteriors.pdf",dpi=500)
     plt.close()
 
