@@ -24,9 +24,9 @@ TBD
 
 First, we need to decide on which linear model we want to use. This model is then written, as a function of hyperparameters *h* and parameters *p* in the file *example/config.cfg*. After this is done, cd to *interface* and run
 
-´´´make
+```make
 make CONFIG_FILE="../example/config.cfg"
-´´´
+```
 
 which compiles the emulator with the specified linear model. 
 
