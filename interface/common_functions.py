@@ -80,7 +80,8 @@ def plot_posteriors_iter(eli,file_names):
     no_files=np.array(file_names).shape[0]
     samples=list()
     for i in np.arange(no_files):
-        samples.append(np.genfromtxt(file_names[i]))
+        read=np.genfromtxt(file_names[i])
+        samples.append(read[read.shape[0]/5:read.shape[0],:])
     down=eli.lower_bounds
     up=eli.upper_bounds
     no_of_pars=up.shape[0]
@@ -88,8 +89,8 @@ def plot_posteriors_iter(eli,file_names):
     f,axes=plt.subplots(2,int(np.ceil(no_of_pars/2)),figsize=(24,12))
     row=0
     col=0
-    colors='bgcymrkwbgrcmykw'
-    linetypes=['--','-.','-.','-.','-.','-','-']
+    colors='bgcymbkrgrcmykw'
+    linetypes=['--','-.','-.','-.','-.',':','-','-']
     kolmog_stats=np.zeros((2*no_files-1,up.shape[0]))
     for i in np.arange(up.shape[0]):
         # patches=[]
@@ -98,6 +99,7 @@ def plot_posteriors_iter(eli,file_names):
         for j in np.arange(no_files):
             Ds,ps=stats.ks_2samp(samples[j][:,i],samples[-1][:,i])
             kolmog_stats[j*2,i]=Ds
+            kolmog_stats[j*2,i]=1
             if j>0:
                 D,p=stats.ks_2samp(samples[j][:,i],samples[j-1][:,i])
                 kolmog_stats[j*2-1,i]=D
@@ -118,7 +120,9 @@ def plot_posteriors_iter(eli,file_names):
     f.tight_layout(rect=[0, 0.13, 1, 1])
     np.savetxt("kolmog.dat",kolmog_stats,delimiter=" & ", fmt="%.2f")
     # f.legend([leg1,patches[2],patches[1],patches[0]],["Prior distribution","SWMM posterior","Emulator (improved) posterior","Emulator (standard) posterior",], bbox_to_anchor=[0.5, 0.05],loc='center',ncol=2)
-    f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5],lines[6]],["noniterative (128)","0$^{th}$ iteration (64)","1$^{st}$ iteration (80)","2$^{nd}$ iteration (96)","3$^{rd}$ iteration (112)","4$^{th}$ iteration (128)","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=3)
+    # f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5],lines[6]],["noniterative (128)","0$^{th}$ iteration (64)","1$^{st}$ iteration (80)","2$^{nd}$ iteration (96)","3$^{rd}$ iteration (112)","4$^{th}$ iteration (128)","4$^{th}$ iteration (144)","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=3)
+    # f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5],lines[6],lines[7]],["noniterative (72)","0$^{th}$ iteration (32)","1$^{st}$ iteration (40)","2$^{nd}$ iteration (48)","3$^{rd}$ iteration (56)","4$^{th}$ iteration (64)","5$^{th}$ iteration (72)","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=3)
+    f.legend([lines[0],lines[1],lines[2],lines[3],lines[4],lines[5],lines[6],lines[7]],["noniterative (108)","0$^{th}$ iteration (48)","1$^{st}$ iteration (60)","2$^{nd}$ iteration (72)","3$^{rd}$ iteration (84)","4$^{th}$ iteration (96)","5$^{th}$ iteration (108)","SWMM",], bbox_to_anchor=[0.5, 0.08],loc='center',ncol=3)
     f.savefig("posteriors.pdf",dpi=500)
     plt.close()
 
