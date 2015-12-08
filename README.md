@@ -2,7 +2,7 @@
 
 Fortran implementation of a mechanistic emulator applied to hydrological models based on the shallow-water equations.
 
-## Quick intro into the included minimal example
+## Quick intro
 
 A mechanistic emulator constits of a sum of two parts -- the linear model and
  a Gaussian process conditioned on previous runs of the full model. In this readme, we deal only
@@ -10,22 +10,34 @@ with the implementation and refer to the second article mentioned in the
 [References](https://github.com/machacd/mechemu#references) when it comes to
 equations.
 
-### Linear model
+## Folder structure
 
-The linear model currently implemented (file **core.f90**) consists of *m* coupled 
-linear reservoirs, connected in series. One can specifiy, how many of them are
-surface reservoirs (they recieve rainfall), which then have their outflow governed
-by equation (5) in the newest referenced article.
+Source code of the emulator itself is stored in the folder *core*, compiled executables and libraries are stored in *interface* and the example data files are in *example*.
 
-All the other reservoirs are subsurface linear reservoirs, with the release
-coefficient as per equation (10). The output of the emulator is then always read
-from the very last reservoir, or the reservoir before that, if the user specifies
-*dim_obs=2*.
+## Prerequisites
 
+TBD
+
+## Minimal included example tutorial
+
+### Linear model setup
+
+First, we need to decide on which linear model we want to use. This model is then written, as a function of hyperparameters *h* and parameters *p* in the file *example/config.cfg*. After this is done, cd to *interface* and run
+
+´´´make
+make CONFIG_FILE="../example/config.cfg"
+´´´
+
+which compiles the emulator with the specified linear model. 
 
 ### Design data
 
-Design data consist of pairs parameter--model output. The user needs to generate them externaly using her model.
+Furthemore, we need the *design data* -- input parameters and corresponding outputs. The example inputs are stored in the file *design_pars.dat*, where each column represents a certain parameter *p*, which need to be in the same order as used in the config file. The file *design_outputs.dat* has the corresponding outputs.In the provided example, the file has 72 lines -- 64 design data sets generated with *Latin hypercube sampling* and 8 test sets.
+
+### Running the emulator
+
+The emulator is then run from the file *main.py*, which includes the bare minimum in order to produce output plot. In time, this file will include more functions, which are already in the classes files in the *interface folder*.
+
 
 ## References 
 
@@ -46,3 +58,5 @@ the Swiss National Science Foundation, grants no. CR22I2 135551 and CR22I2 15282
 ![Eawag](http://www.fishecology.ch/layout/ealogo-print.gif)
 
 ## License
+
+TBD
