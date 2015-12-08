@@ -101,6 +101,7 @@ real,allocatable :: p(:),h(:)
 p=this%parameters(alpha,:)
 h=this%hyperparam
 ! @configOnF
+F(1,1)=-h(1)*h(4)*p(2)/h(4)*p(5)*SQRT(p(3)*h(5))
 ! @configOffF
 End function
 
@@ -157,6 +158,7 @@ h=this%hyperparam
 i=this%input
 
 ! @configOnB
+b(1)=i(MAX(t-int(h(3)),1))*p(1)*h(2)
 ! @configOffB
 out=-matmul(matmul(inv_mat(getF(this,alpha))&
     ,this%I-Fexp),b)
@@ -171,6 +173,7 @@ Hp=0
 p=this%parameters(alpha,:)
 h=this%hyperparam
 ! @configOnH
+Hp(1,1)=h(1)*h(4)*p(2)/h(4)*p(5)*SQRT(p(3)*h(5))
 ! @configOffH
 End function
 
