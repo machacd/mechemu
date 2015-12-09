@@ -221,7 +221,8 @@ class emu(object):
 
     def objective_hyperpars(self,pars):
         self.cor_len=[pars[0]]*self.dp.shape[1]
-        self.hyperparam=np.hstack((pars[1:3],0))
+        # self.hyperparam=np.hstack((pars[0:3],0))
+        self.hyperparam[0:3]=pars
         t=self.dd.shape[1]
         self.condition()
         suma=0
@@ -241,11 +242,11 @@ class emu(object):
     def estimate_hyperpars(self):
         import scipy.optimize as opt
         lower=np.array([0,0,0])
-        upper=np.array([0.001,0.01,100000000])
+        upper=np.array([0.001,10,10])
         ret=opt.differential_evolution(self.objective_hyperpars,
                                        bounds=list(zip(lower,
                                                        upper))
-                                       ,disp=True, popsize=20,maxiter=20,
+                                       ,disp=True, popsize=100,maxiter=200,
                                        polish=False)
         return ret
 

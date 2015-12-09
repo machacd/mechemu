@@ -2,9 +2,13 @@
 
 Fortran implementation of a mechanistic emulator applied to hydrological models based on the shallow-water equations.
 
+## Purpose
+
+Purpose of this software package is to approximate slow hydrological models by a fast mechanistic emulator. Mechanism-base emulator is a subclass of Gaussian process emulators, which also uses our knowledge of the original simulator.
+
 ## Quick intro
 
-A mechanistic emulator constits of a sum of two parts -- the linear model and
+A mechanistic emulator consists of a sum of two parts -- the linear model and
  a Gaussian process conditioned on previous runs of the full model. In this readme, we deal only
 with the implementation and refer to the second article mentioned in the 
 [References](https://github.com/machacd/mechemu#references) when it comes to
@@ -20,7 +24,7 @@ TBD
 
 ## Minimal included example tutorial
 
-### Linear model setup
+### Linear model set-up
 
 First, we need to decide on which linear model we want to use. This model is then written, as a function of hyperparameters *h* and parameters *p* in the file *example/config.cfg*. After this is done, cd to *interface* and run
 
