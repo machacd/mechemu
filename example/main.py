@@ -3,7 +3,7 @@ import sys
 sys.path.append("../interface")
 import classes_emu as e
 import classes_cal as c
-import classes_swmm as s
+# import classes_swmm as s
 import common_functions as cf
 from subprocess import call
 rain=np.genfromtxt("rain.dat")*1000*1000
