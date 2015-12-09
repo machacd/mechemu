@@ -101,7 +101,7 @@ real,allocatable :: p(:),h(:)
 p=this%parameters(alpha,:)
 h=this%hyperparam
 ! @configOnF
-F(1,1)=-h(1)*h(4)*p(2)/h(4)*p(5)*SQRT(p(3)*h(5))
+F(1,1)=-h(1)*h(4)*p(2)/h(4)*SQRT(p(3)*h(5))
 ! @configOffF
 End function
 
@@ -173,7 +173,7 @@ Hp=0
 p=this%parameters(alpha,:)
 h=this%hyperparam
 ! @configOnH
-Hp(1,1)=h(1)*h(4)*p(2)/h(4)*p(5)*SQRT(p(3)*h(5))
+Hp(1,1)=h(1)*h(4)*p(2)/h(4)*SQRT(p(3)*h(5))
 ! @configOffH
 End function
 
