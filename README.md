@@ -45,9 +45,12 @@ The emulator is then run from the file *main.py*, which includes the bare minimu
 
 ## References 
 
-Machac, D.; Reichert, P.; Rieckermann, J. & Albert, C. **Fast emulator of a a slow urban drainage simulator**. *Environmental Modelling & Software*, 2015 (submitted)
+Machac, D.; Reichert, P.; Rieckermann, J.; Del Giudice, D. & Albert, C. **Accelerating Bayesian inference in hydrological modelling with a mechanistic emulator**, 2016
+[**Source data for the article**](https://dl.dropboxusercontent.com/u/23101549/results.zip)
 
-Machac, D.; Reichert, P. & Albert, C. **Emulation of dynamic simulators with application to hydrology**. *Journal of Computational Physics*, 2015 (in review)
+Machac, D.; Reichert, P.; Rieckermann, J. & Albert, C. **Fast emulator of a a slow urban drainage simulator**. *Environmental Modelling & Software*, 2016, 78, 54 -- 67
+
+Machac, D.; Reichert, P. & Albert, C. **Emulation of dynamic simulators with application to hydrology**. *Journal of Computational Physics*, 2016, 313, 352 -- 366
 
 Albert, C. [**A mechanistic dynamic emulator**](http://arxiv.org/abs/1112.5304). *Nonlinear Analysis: Real World Applications*, 2012, 13, 2747 -- 2754
 
